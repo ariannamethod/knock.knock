@@ -189,8 +189,8 @@ def cleanup_output(text: str, mode: str = "gentle") -> str:
     
     # "don" + space + verb → "don't" + verb (common broken pattern)
     # "don" + space + verb → "don't" + verb (common broken pattern)
-    # PART 1: Hardcoded common verbs
-    result = re.sub(r"\bdon\s+(believe|think|know|want|need|like|care|worry|mind|understand|remember|forget|see|hear|feel|get|go|do|be|have|make|take|give|say|tell|ask|try|look|come|put|let|seem|mean|stop|start|die|live|stay|leave|keep|wait|work|play|sleep|eat|drink|read|write|watch|listen|touch|hurt|cry|laugh|love|hate|miss|trust|turn|move|run|walk|talk|speak|call|find|hold|sit|stand|open|close|break|change|move|use|show|help|bring|send|meet|learn|grow|fall|pick|pull|push|hang|cut|hit|set|pay|buy|sell|wear|throw|catch|carry|draw|fight|beat|kill|burn|fix|clean|build|drive|ride|fly|swim|dance|sing|jump|drop|lose|win|choose|teach|reach|pass|cross|hide|rise|raise|shake|wake|ring|swing|shut|stick|bend|blow|tear|feed|lead|spend|lend|bite|steal)\b", r"don't \1", result, flags=re.IGNORECASE)
+    # PART 1: Hardcoded common verbs (including gothic/literary ones)
+    result = re.sub(r"\bdon\s+(believe|think|know|want|need|like|care|worry|mind|understand|remember|forget|see|hear|feel|get|go|do|be|have|make|take|give|say|tell|ask|try|look|come|put|let|seem|mean|stop|start|die|live|stay|leave|keep|wait|work|play|sleep|eat|drink|read|write|watch|listen|touch|hurt|cry|laugh|love|hate|miss|trust|turn|move|run|walk|talk|speak|call|find|hold|sit|stand|open|close|break|change|move|use|show|help|bring|send|meet|learn|grow|fall|pick|pull|push|hang|cut|hit|set|pay|buy|sell|wear|throw|catch|carry|draw|fight|beat|kill|burn|fix|clean|build|drive|ride|fly|swim|dance|sing|jump|drop|lose|win|choose|teach|reach|pass|cross|hide|rise|raise|shake|wake|ring|swing|shut|stick|bend|blow|tear|feed|lead|spend|lend|bite|steal|trudge|wander|linger|ponder|whisper|murmur|shiver|tremble|fade|drift|ache|yearn|mourn|grieve|regret|suffer|struggle|stumble|tumble|crumble|shatter|scatter|gather|matter|bother|smother|hover|cover|discover|recover|uncover|sober|wonder|thunder|blunder|plunder|slumber|lumber|number|remember|member|tender|render|surrender|hinder|wander|ponder|squander)\b", r"don't \1", result, flags=re.IGNORECASE)
     
     # PART 2: Heuristic by word endings (catches words not in hardcoded list)
     # -ing endings: trying, dying, living, waiting, working, etc.
@@ -199,9 +199,31 @@ def cleanup_output(text: str, mode: str = "gentle") -> str:
     result = re.sub(r"\bdon\s+(\w+ed)\b", r"don't \1", result, flags=re.IGNORECASE)
     # -en endings (participles): forgotten, broken, taken, etc.
     result = re.sub(r"\bdon\s+(\w+en)\b", r"don't \1", result, flags=re.IGNORECASE)
+    # -le/-ge/-se/-ze endings: struggle, trudge, lose, freeze, etc.
+    result = re.sub(r"\bdon\s+(\w+(?:le|ge|se|ze))\b", r"don't \1", result, flags=re.IGNORECASE)
     
     # Same for "won" → "won't"
     result = re.sub(r"\bwon\s+(\w+ing|\w+ed|believe|think|know|want|need|like|go|do|be|have|make|say|tell|try|stop|wait|work|turn|move|run|walk|talk|speak|call|find|hold|sit|stand|open|close|break|change|use|show|help|bring|send|meet|learn|grow|fall|pick|let|get|take|give|come|put|look|see|hear|feel|stay|leave|keep|die|live|start|eat|drink|sleep|play|read|write|watch|listen)\b", r"won't \1", result, flags=re.IGNORECASE)
+    
+    # 15d. ORPHAN CONTRACTION FIX: "don" alone at end/before punctuation → "ain't"
+    # Philosophy: If subword tokenization cuts "don't" to just "don", 
+    # we rescue it as "ain't" which has CHARACTER and fits gothic romance vibe!
+    # 
+    # "I don of that" → "I ain't of that"
+    # "I don." → "I ain't."
+    # "I don trudge" → "I ain't trudge" (verb-like)
+    # 
+    # Match "don" when:
+    # - At end of text: \bdon$
+    # - Before punctuation: \bdon(?=[.,!?])
+    # - Before preposition/article (not a verb): \bdon\s+(of|the|a|an|to|for|with|from|about|by|on|in|at|my|your|his|her|their|its|this|that)
+    result = re.sub(r"\bdon\s*$", "ain't", result, flags=re.IGNORECASE)
+    result = re.sub(r"\bdon(?=[.,!?])", "ain't", result, flags=re.IGNORECASE)
+    result = re.sub(r"\bdon\s+(of|the|a|an|to|for|with|from|about|by|on|in|at|my|your|his|her|their|its|this|that)\b", r"ain't \1", result, flags=re.IGNORECASE)
+    
+    # Same for "won" orphan → "ain't" (rare but possible)
+    result = re.sub(r"\bwon\s*$", "ain't", result, flags=re.IGNORECASE)
+    result = re.sub(r"\bwon(?=[.,!?])", "ain't", result, flags=re.IGNORECASE)
     
     # "they" + "my" (missing 're) → "they’re my"
     result = re.sub(r"\bthey\s+my\b", "they’re my", result, flags=re.IGNORECASE)
