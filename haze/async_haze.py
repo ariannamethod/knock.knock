@@ -30,6 +30,7 @@ try:
     from .overthinking import AsyncOverthinking, RingsSnapshot
     from .lexicon import AsyncLexicon, LexiconStats
     from .cleanup import cleanup_output
+    from .experts import route_to_mixture, pulse_to_signals, describe_mixture, ExpertMixture
 except ImportError:
     from haze import Vocab, PostGPT, load_corpus
     from cooccur import CooccurField
@@ -37,6 +38,7 @@ except ImportError:
     from overthinking import AsyncOverthinking, RingsSnapshot
     from lexicon import AsyncLexicon, LexiconStats
     from cleanup import cleanup_output
+    from experts import route_to_mixture, pulse_to_signals, describe_mixture, ExpertMixture
 
 try:
     import aiosqlite
@@ -56,6 +58,7 @@ class HazeResponse:
     temperature: float = 0.6
     generation_time: float = 0.0
     enrichment_count: int = 0
+    expert_mixture: Optional[ExpertMixture] = None
     
     def __repr__(self) -> str:
         preview = self.text[:50] + "..." if len(self.text) > 50 else self.text
@@ -171,6 +174,7 @@ class AsyncHazeField:
         length: Optional[int] = None,
         temperature: Optional[float] = None,
         cleanup: bool = True,
+        use_experts: bool = True,
     ) -> HazeResponse:
         """
         Generate a response to user input.
@@ -178,23 +182,24 @@ class AsyncHazeField:
         This is the main entry point. It:
         1. Absorbs user words into lexicon
         2. Computes pulse from input
-        3. Gets internal seed (NOT from user input!)
-        4. Generates from field
-        5. Runs overthinking rings (enriches field)
-        6. Returns cleaned response
+        3. Routes to resonant experts (MOE-style temperature blending)
+        4. Gets internal seed (NOT from user input!)
+        5. Generates from field
+        6. Runs overthinking rings (enriches field)
+        7. Returns cleaned response
         
         Args:
             user_input: What the user said
             length: Generation length (default: self.generation_length)
-            temperature: Temperature override
+            temperature: Temperature override (disables expert routing)
             cleanup: Whether to clean output
+            use_experts: Use resonant expert routing (MOE-style)
         
         Returns:
             HazeResponse with full metadata
         """
         start_time = time.time()
         length = length or self.generation_length
-        temp = temperature or self.base_temperature
         
         async with self._field_lock:
             # 1. ABSORB USER WORDS (lexicon growth)
@@ -204,11 +209,25 @@ class AsyncHazeField:
             # 2. GET INTERNAL SEED (no seed from prompt!)
             seed_tokens, pulse, seed_text = await self.subjectivity.get_internal_seed(
                 user_input,
-                temperature=temp
+                temperature=self.base_temperature
             )
             
-            # 3. ADJUST TEMPERATURE based on pulse
-            adjusted_temp = await self.subjectivity.adjust_temperature(pulse)
+            # 3. ROUTE TO EXPERTS (MOE-style temperature blending)
+            expert_mixture = None
+            if use_experts and temperature is None:
+                # Convert pulse to field signals
+                signals = pulse_to_signals(
+                    novelty=pulse.novelty,
+                    arousal=pulse.arousal,
+                    entropy=pulse.entropy,
+                )
+                expert_mixture = route_to_mixture(signals)
+                adjusted_temp = expert_mixture.temperature
+            elif temperature is not None:
+                adjusted_temp = temperature
+            else:
+                # Fallback to subjectivity's temperature adjustment
+                adjusted_temp = await self.subjectivity.adjust_temperature(pulse)
             
             # 4. GENERATE FROM FIELD (pure resonance)
             generated_tokens = self.field.generate_from_corpus(
@@ -252,6 +271,7 @@ class AsyncHazeField:
             temperature=adjusted_temp,
             generation_time=generation_time,
             enrichment_count=enrichment,
+            expert_mixture=expert_mixture,
         )
     
     async def get_stats(self) -> Dict:

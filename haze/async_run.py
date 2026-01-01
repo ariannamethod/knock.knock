@@ -4,6 +4,7 @@
 # Features:
 #   - ASYNC architecture (like Leo - 47% coherence improvement)
 #   - NO SEED FROM PROMPT - internal field resonance
+#   - RESONANT EXPERTS - MOE-style temperature blending
 #   - OVERTHINKING - three rings enrich the field
 #   - LEXICON GROWTH - absorbs user vocabulary
 #   - DEFAULT UNTRAINED MODE - pure resonance, no weights needed
@@ -24,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from haze import Vocab, CooccurField, load_corpus
 from async_haze import AsyncHazeField, HazeResponse
 from cleanup import cleanup_output
+from experts import describe_mixture
 
 
 # ----------------- defaults -----------------
@@ -186,6 +188,10 @@ def print_response(response: HazeResponse, state: AsyncREPLState):
         print(f"  seed: \"{seed_preview}\"")
     
     if state.show_stats:
+        # Show expert mixture if available
+        if response.expert_mixture:
+            mixture_desc = describe_mixture(response.expert_mixture)
+            print(f"  experts: {mixture_desc}")
         print(f"  temp={response.temperature:.2f} time={response.generation_time:.3f}s enrichment={response.enrichment_count}")
 
 

@@ -38,6 +38,12 @@ from .overthinking import Overthinking, AsyncOverthinking, Ring, RingsSnapshot
 # Import lexicon (dynamic growth)
 from .lexicon import Lexicon, AsyncLexicon, LexiconStats
 
+# Import resonant experts (MOE-style temperature routing)
+from .experts import (
+    Expert, EXPERTS, ExpertMixture, FieldSignals,
+    route_to_mixture, route_single_expert, pulse_to_signals, describe_mixture
+)
+
 # Import async haze field
 from .async_haze import AsyncHazeField, HazeResponse
 
@@ -84,6 +90,15 @@ __all__ = [
     'Lexicon',
     'AsyncLexicon',
     'LexiconStats',
+    # Resonant Experts (MOE-style temperature routing)
+    'Expert',
+    'EXPERTS',
+    'ExpertMixture',
+    'FieldSignals',
+    'route_to_mixture',
+    'route_single_expert',
+    'pulse_to_signals',
+    'describe_mixture',
     # Async haze field
     'AsyncHazeField',
     'HazeResponse',
