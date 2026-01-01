@@ -261,8 +261,15 @@ this is where the **arianna method** really shows up. the model tunes itself bas
 **new:** `hallucinations.py` — see what your reweight heads actually learn.
 
 ```python
+# from the haze package directory
 from hallucinations import hallucinate
-from haze import Vocab, ReweightGPT as Haze
+from model import Vocab, ReweightGPT as Haze
+
+# or if using as package
+import sys
+sys.path.insert(0, 'haze')
+from haze import Vocab, Haze
+from haze.hallucinations import hallucinate
 
 # build model
 text = open("text.txt").read()
@@ -296,16 +303,35 @@ pip install matplotlib
 
 ```
 haze/
-├── nn.py              # numpy primitives (activations, sampling, metrics)
-├── haze.py            # the model itself (inference only)
-├── hallucinations.py  # attention visualization and analysis
-├── run.py             # interactive REPL
-├── example.py         # demo script
-├── text.txt           # your corpus (you create this)
-├── tests/             # comprehensive test suite (72 tests, all passing)
-│   ├── test_nn.py     # tests for neural net primitives
-│   └── test_haze.py   # tests for model components
-└── requirements.txt   # numpy + matplotlib (optional)
+├── README.md            # this file
+├── talkto.py            # quick bridge to interactive REPL
+└── haze/                # main package
+    ├── __init__.py      # package exports
+    ├── nn.py            # numpy primitives (activations, sampling, metrics)
+    ├── model.py         # the model itself (inference only)
+    ├── hallucinations.py# attention visualization and analysis
+    ├── run.py           # interactive REPL
+    ├── example.py       # demo script
+    ├── text.txt         # your corpus (you create this)
+    ├── requirements.txt # numpy + matplotlib (optional)
+    └── tests/           # comprehensive test suite (73 tests, all passing)
+        ├── test_nn.py   # tests for neural net primitives
+        └── test_haze.py # tests for model components
+```
+
+### quick start
+
+```bash
+# talk to the haze (interactive mode)
+python talkto.py
+
+# or run from the package
+cd haze
+python run.py
+
+# run demo
+cd haze
+python example.py
 ```
 
 ---

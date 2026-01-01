@@ -60,7 +60,10 @@ def extract_reweight_attention(
     for i, blk in enumerate(model.blocks):
         if i == block_idx:
             # compute attention for this block
-            from haze import layer_norm, softmax
+            try:
+                from .model import layer_norm, softmax
+            except ImportError:
+                from model import layer_norm, softmax
             x_norm = layer_norm(x, blk.ln1_gamma, blk.ln1_beta)
             
             # get attention matrix from reweight head
@@ -357,7 +360,7 @@ if __name__ == "__main__":
     print()
     print("Usage:")
     print("  from hallucinations import hallucinate")
-    print("  from haze import Vocab, ReweightGPT as Haze")
+    print("  from model import Vocab, ReweightGPT as Haze")
     print()
     print("  text = open('text.txt').read()")
     print("  vocab = Vocab.from_text(text)")

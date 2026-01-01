@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# tests/test_haze.py — Tests for haze.py module
+# tests/test_haze.py — Tests for model.py module
 
 import unittest
 import numpy as np
@@ -9,7 +9,7 @@ import os
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import haze
+import model as haze
 import nn
 
 

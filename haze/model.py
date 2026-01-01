@@ -1,4 +1,4 @@
-# haze.py — Reweight-GPT with Hybrid Attention (NumPy inference)
+# model.py — Reweight-GPT with Hybrid Attention (NumPy inference)
 #
 # Architecture:
 #   - HybridHead = ReweightHead (positional) + ContentHead (semantic)
@@ -14,23 +14,42 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Literal
 
-from nn import (
-    get_rng,
-    init_weight,
-    softmax,
-    gelu,
-    layer_norm,
-    rms_norm,
-    sample_basic,
-    sample_top_k,
-    sample_top_p,
-    sample_mirostat,
-    sample_mirostat_v2,
-    entropy_temperature,
-    resonance_temperature,
-    entropy_bits,
-    confidence_score,
-)
+try:
+    from .nn import (
+        get_rng,
+        init_weight,
+        softmax,
+        gelu,
+        layer_norm,
+        rms_norm,
+        sample_basic,
+        sample_top_k,
+        sample_top_p,
+        sample_mirostat,
+        sample_mirostat_v2,
+        entropy_temperature,
+        resonance_temperature,
+        entropy_bits,
+        confidence_score,
+    )
+except ImportError:
+    from nn import (
+        get_rng,
+        init_weight,
+        softmax,
+        gelu,
+        layer_norm,
+        rms_norm,
+        sample_basic,
+        sample_top_k,
+        sample_top_p,
+        sample_mirostat,
+        sample_mirostat_v2,
+        entropy_temperature,
+        resonance_temperature,
+        entropy_bits,
+        confidence_score,
+    )
 
 
 # ----------------- vocab -----------------
@@ -421,7 +440,10 @@ class ReweightGPT:
                 
                 # track resonance
                 if history_logits:
-                    from nn import resonance_score
+                    try:
+                        from .nn import resonance_score
+                    except ImportError:
+                        from nn import resonance_score
                     res = resonance_score(logits_last, history_logits[-1])
                     resonances.append(res)
                 else:

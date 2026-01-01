@@ -17,7 +17,7 @@ import sys
 import argparse
 from pathlib import Path
 
-from haze import (
+from model import (
     Vocab,
     ReweightGPT as Haze,
     load_corpus,
