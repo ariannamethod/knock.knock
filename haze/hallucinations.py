@@ -2,7 +2,7 @@
 # hallucinations.py — Attention pattern visualization and analysis
 #
 # Exports attention weights from haze models for visualization.
-# See what patterns the reweight heads actually learn.
+# See what patterns the RRPRAM heads actually learn.
 # Because sometimes you need to stare into the void and see what stares back.
 
 from __future__ import annotations
@@ -22,14 +22,14 @@ except ImportError:
 # ----------------- attention extraction -----------------
 
 
-def extract_reweight_attention(
+def extract_rrpram_attention(
     model,
     input_seq: np.ndarray,
     block_idx: int = 0,
     head_idx: int = 0,
 ) -> np.ndarray:
     """
-    Extract attention matrix from a reweight head.
+    Extract attention matrix from an RRPRAM head.
     
     Args:
         model: Haze model instance
@@ -44,13 +44,15 @@ def extract_reweight_attention(
     block = model.blocks[block_idx]
     head = block.heads[head_idx]
     
-    # check if it's a reweight head
+    # check if it's an RRPRAM head
     if not hasattr(head, 'wr'):
         # try to unwrap if it's a hybrid head
-        if hasattr(head, 'reweight'):
+        if hasattr(head, 'rrpram'):
+            head = head.rrpram
+        elif hasattr(head, 'reweight'):  # backwards compat
             head = head.reweight
         else:
-            raise ValueError(f"Head {head_idx} in block {block_idx} is not a reweight head")
+            raise ValueError(f"Head {head_idx} in block {block_idx} is not an RRPRAM head")
     
     # forward through embedding
     T = len(input_seq)
@@ -66,7 +68,7 @@ def extract_reweight_attention(
                 from haze import layer_norm, softmax
             x_norm = layer_norm(x, blk.ln1_gamma, blk.ln1_beta)
             
-            # get attention matrix from reweight head
+            # get attention matrix from RRPRAM head
             attn = x_norm @ head.wr  # (T, T)
             
             # apply causal mask
@@ -86,12 +88,16 @@ def extract_reweight_attention(
     raise ValueError(f"Block {block_idx} not found")
 
 
-def extract_all_reweight_patterns(
+# Backwards compatibility alias
+extract_reweight_attention = extract_rrpram_attention
+
+
+def extract_all_rrpram_patterns(
     model,
     input_seq: np.ndarray,
 ) -> Dict[str, np.ndarray]:
     """
-    Extract all reweight attention patterns from model.
+    Extract all RRPRAM attention patterns from model.
     
     Returns:
         dict mapping "block_{i}_head_{j}" to attention matrix
@@ -100,19 +106,23 @@ def extract_all_reweight_patterns(
     
     for block_idx, block in enumerate(model.blocks):
         for head_idx, head in enumerate(block.heads):
-            # check if reweight head
+            # check if RRPRAM head
             has_wr = hasattr(head, 'wr')
-            is_hybrid = hasattr(head, 'reweight')
+            is_hybrid = hasattr(head, 'rrpram') or hasattr(head, 'reweight')
             
             if has_wr or is_hybrid:
                 try:
-                    attn = extract_reweight_attention(model, input_seq, block_idx, head_idx)
+                    attn = extract_rrpram_attention(model, input_seq, block_idx, head_idx)
                     key = f"block_{block_idx}_head_{head_idx}"
                     patterns[key] = attn
                 except Exception as e:
                     print(f"[warn] failed to extract {block_idx}/{head_idx}: {e}")
     
     return patterns
+
+
+# Backwards compatibility alias
+extract_all_reweight_patterns = extract_all_rrpram_patterns
 
 
 # ----------------- visualization -----------------
@@ -200,7 +210,7 @@ def visualize_all_patterns(
         save_dir.mkdir(exist_ok=True, parents=True)
     
     for key, attn in patterns.items():
-        title = f"Reweight Attention: {key.replace('_', ' ').title()}"
+        title = f"RRPRAM Attention: {key.replace('_', ' ').title()}"
         save_path = str(save_dir / f"{key}.png") if save_dir else None
         visualize_attention_matrix(attn, title=title, tokens=tokens, save_path=save_path)
 
@@ -326,7 +336,7 @@ def hallucinate(
     print(f"[hallucinations] sequence length: {len(input_seq)}")
     
     # extract patterns
-    patterns = extract_all_reweight_patterns(model, input_seq)
+    patterns = extract_all_rrpram_patterns(model, input_seq)
     print(f"[hallucinations] extracted {len(patterns)} attention patterns")
     
     # create save directory
@@ -355,7 +365,7 @@ if __name__ == "__main__":
     
     # example usage
     print("=" * 60)
-    print("  hallucinations.py — attention pattern analysis")
+    print("  hallucinations.py — RRPRAM attention pattern analysis")
     print("=" * 60)
     print()
     print("Usage:")

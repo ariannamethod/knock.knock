@@ -140,8 +140,18 @@ class TestBlock(unittest.TestCase):
         out = block.forward(x)
         self.assertEqual(out.shape, (self.T, self.n_emb))
     
-    def test_block_reweight_forward(self):
-        """Test reweight-only block forward pass."""
+    def test_block_rrpram_forward(self):
+        """Test RRPRAM-only block forward pass."""
+        block = Block(
+            self.n_emb, self.T, self.nodes, self.rng,
+            n_heads=4, head_type="rrpram"
+        )
+        x = np.random.randn(self.T, self.n_emb).astype(np.float32)
+        out = block.forward(x)
+        self.assertEqual(out.shape, (self.T, self.n_emb))
+    
+    def test_block_reweight_backward_compat(self):
+        """Test reweight head_type still works (backwards compat)."""
         block = Block(
             self.n_emb, self.T, self.nodes, self.rng,
             n_heads=4, head_type="reweight"
@@ -161,8 +171,8 @@ class TestBlock(unittest.TestCase):
         self.assertEqual(out.shape, (self.T, self.n_emb))
 
 
-class TestReweightGPT(unittest.TestCase):
-    """Test ReweightGPT model."""
+class TestPostGPT(unittest.TestCase):
+    """Test PostGPT model."""
     
     def setUp(self):
         self.vocab_size = 20
@@ -337,8 +347,24 @@ class TestReweightGPT(unittest.TestCase):
 class TestModelVariants(unittest.TestCase):
     """Test different model configurations."""
     
-    def test_reweight_only_model(self):
-        """Test model with only reweight heads."""
+    def test_rrpram_only_model(self):
+        """Test model with only RRPRAM heads."""
+        model = PostGPT(
+            vocab_size=20,
+            T=16,
+            n_emb=32,
+            nodes=32,
+            n_blocks=2,
+            n_heads=4,
+            head_type="rrpram",
+            seed=42,
+        )
+        idx_seq = np.array([0, 1, 2], dtype=np.int32)
+        logits = model.logits(idx_seq)
+        self.assertEqual(logits.shape, (3, 20))
+    
+    def test_reweight_backward_compat(self):
+        """Test model with reweight head_type (backwards compat)."""
         model = PostGPT(
             vocab_size=20,
             T=16,

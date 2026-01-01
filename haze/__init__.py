@@ -4,7 +4,8 @@
 from .haze import (
     Vocab,
     PostGPT,
-    ReweightHead,
+    RRPRAMHead,
+    ReweightHead,  # backwards compat alias
     ContentHead,
     HybridHead,
     Block,
@@ -21,7 +22,8 @@ __all__ = [
     'PostGPT',
     'Haze',  # alias
     'ReweightGPT',  # backwards compat
-    'ReweightHead',
+    'RRPRAMHead',
+    'ReweightHead',  # backwards compat alias for RRPRAMHead
     'ContentHead',
     'HybridHead',
     'Block',

@@ -45,8 +45,8 @@ def main():
         nodes=64,
         n_blocks=3,
         n_heads=4,
-        head_type="hybrid",  # try: "reweight", "content", "hybrid"
-        alpha=0.5,           # reweight/content mix (only for hybrid)
+        head_type="hybrid",  # try: "rrpram", "content", "hybrid"
+        alpha=0.5,           # rrpram/content mix (only for hybrid)
         seed=42,
     )
     print(f"[model] T={model.T}, n_emb={model.n_emb}, head_type={model.head_type}")
@@ -88,7 +88,7 @@ def main():
     print("=" * 60)
     print()
 
-    for head_type in ["reweight", "content", "hybrid"]:
+    for head_type in ["rrpram", "content", "hybrid"]:
         model_test = PostGPT(
             vocab_size=vocab.vocab_size,
             T=32,

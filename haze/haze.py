@@ -83,17 +83,20 @@ class Vocab:
 # ----------------- attention heads -----------------
 
 
-class ReweightHead:
+class RRPRAMHead:
     """
-    Reweight attention: learns positional attention patterns directly.
-    Instead of QK^T, uses x @ W_reweight → (T, T) attention matrix.
+    RRPRAM: Recursive Resonant Pattern Recognition Attention Mechanism.
+    
+    Learns positional attention patterns directly.
+    Instead of QK^T, uses x @ W_pattern → (T, T) attention matrix.
     
     Captures: rhythm, n-gram patterns, positional dependencies.
+    The "recursive resonant" part: learns patterns of patterns. meta-attention.
     """
 
     def __init__(self, n_emb: int, head_dim: int, T: int, rng):
         self.wv = init_weight((n_emb, head_dim), rng=rng)
-        self.wr = init_weight((n_emb, T), rng=rng)  # reweight projection
+        self.wr = init_weight((n_emb, T), rng=rng)  # pattern projection
         self.T = T
         self.head_dim = head_dim
 
@@ -111,9 +114,13 @@ class ReweightHead:
         mask = np.where(tril == 1.0, 0.0, -1e9)
         attn = attn[:T, :T] + mask
 
-        rew = softmax(attn, axis=-1)  # (T, T)
-        out = rew @ v[:T]  # (T, head_dim)
+        pattern = softmax(attn, axis=-1)  # (T, T)
+        out = pattern @ v[:T]  # (T, head_dim)
         return out
+
+
+# Backwards compatibility alias
+ReweightHead = RRPRAMHead
 
 
 class ContentHead:
@@ -155,10 +162,10 @@ class ContentHead:
 
 class HybridHead:
     """
-    Hybrid attention: combines Reweight (positional) + Content (semantic).
+    Hybrid attention: combines RRPRAM (positional) + Content (semantic).
     
     The mix ratio α controls the blend:
-        output = α * reweight_out + (1-α) * content_out
+        output = α * rrpram_out + (1-α) * content_out
     
     This allows the model to use positional patterns (rhythm, structure)
     AND semantic similarity (meaning) simultaneously.
@@ -170,22 +177,27 @@ class HybridHead:
         head_dim: int,
         T: int,
         rng,
-        alpha: float = 0.5,  # reweight vs content mix
+        alpha: float = 0.5,  # rrpram vs content mix
     ):
-        self.reweight = ReweightHead(n_emb, head_dim, T, rng)
+        self.rrpram = RRPRAMHead(n_emb, head_dim, T, rng)
         self.content = ContentHead(n_emb, head_dim, T, rng)
         self.alpha = alpha
         self.head_dim = head_dim
 
         # learnable gate (initialized to alpha)
         self.gate = np.array([alpha], dtype=np.float32)
+    
+    # Backwards compatibility
+    @property
+    def reweight(self):
+        return self.rrpram
 
     def forward(self, x: np.ndarray) -> np.ndarray:
         """
         x: (T, n_emb)
         returns: (T, head_dim)
         """
-        r_out = self.reweight.forward(x)
+        r_out = self.rrpram.forward(x)
         c_out = self.content.forward(x)
 
         # gated combination
@@ -200,7 +212,7 @@ class Block:
     """
     Transformer block with:
     - Pre-norm (more stable for deep networks)
-    - Hybrid attention heads
+    - Hybrid attention heads (RRPRAM + Content)
     - GELU activation (smoother than ReLU)
     - Residual connections
     """
@@ -212,10 +224,14 @@ class Block:
         nodes: int,
         rng,
         n_heads: int = 4,
-        head_type: Literal["hybrid", "reweight", "content"] = "hybrid",
+        head_type: Literal["hybrid", "rrpram", "content", "reweight"] = "hybrid",
         alpha: float = 0.5,
     ):
         head_dim = n_emb // n_heads
+
+        # normalize head_type (reweight is alias for rrpram)
+        if head_type == "reweight":
+            head_type = "rrpram"
 
         # create heads based on type
         if head_type == "hybrid":
@@ -223,9 +239,9 @@ class Block:
                 HybridHead(n_emb, head_dim, T, rng, alpha=alpha)
                 for _ in range(n_heads)
             ]
-        elif head_type == "reweight":
+        elif head_type == "rrpram":
             self.heads = [
-                ReweightHead(n_emb, head_dim, T, rng) for _ in range(n_heads)
+                RRPRAMHead(n_emb, head_dim, T, rng) for _ in range(n_heads)
             ]
         else:  # content
             self.heads = [
@@ -274,12 +290,15 @@ class PostGPT:
     PostGPT: post-transformer hybrid attention language model.
 
     Character-level model with:
-    - Hybrid heads (reweight + content attention)
+    - Hybrid heads (RRPRAM + content attention)
     - Pre-norm blocks with GELU
     - Entropy-aware adaptive temperature
     - Multiple sampling strategies
 
     Part of the Haze ecosystem (Hybrid Attention Entropy System).
+    
+    Why "PostGPT"? Because this is what comes after you understand GPT
+    and ask: "what if we didn't compute QK^T for everything?"
     """
 
     def __init__(
@@ -290,7 +309,7 @@ class PostGPT:
         nodes: int = 32,
         n_blocks: int = 3,
         n_heads: int = 4,
-        head_type: Literal["hybrid", "reweight", "content"] = "hybrid",
+        head_type: Literal["hybrid", "rrpram", "content", "reweight"] = "hybrid",
         alpha: float = 0.5,
         seed: Optional[int] = 42,
     ):
@@ -540,8 +559,8 @@ class PostGPT:
         Because the weight of haze is not in pounds or kilograms,
         but in the patterns it learned from the void.
         
-        Note: This loads as reweight-only heads (no content heads)
-        to match the training architecture. Use head_type="reweight"
+        Note: This loads as RRPRAM-only heads (no content heads)
+        to match the training architecture. Use head_type="rrpram"
         or retrain with hybrid heads for full hybrid inference.
         """
         path = Path(path)
@@ -566,7 +585,7 @@ class PostGPT:
             nodes=nodes,
             n_blocks=n_blocks,
             n_heads=n_heads,
-            head_type="reweight",  # trained model uses reweight heads
+            head_type="rrpram",  # trained model uses RRPRAM heads
             seed=None,
         )
 
@@ -621,14 +640,14 @@ class PostGPT:
             weights[f"blocks.{b}.w1"] = block.w1
             
             for h, head in enumerate(block.heads):
-                # check if reweight head or hybrid
+                # check if RRPRAM head or hybrid
                 if hasattr(head, 'wr'):
                     weights[f"blocks.{b}.heads.{h}.wv"] = head.wv
                     weights[f"blocks.{b}.heads.{h}.wr"] = head.wr
-                elif hasattr(head, 'reweight'):
-                    # hybrid head - save reweight part
-                    weights[f"blocks.{b}.heads.{h}.wv"] = head.reweight.wv
-                    weights[f"blocks.{b}.heads.{h}.wr"] = head.reweight.wr
+                elif hasattr(head, 'rrpram'):
+                    # hybrid head - save RRPRAM part
+                    weights[f"blocks.{b}.heads.{h}.wv"] = head.rrpram.wv
+                    weights[f"blocks.{b}.heads.{h}.wr"] = head.rrpram.wr
         
         np.savez_compressed(path, **weights)
         print(f"[saved] the weight of haze → {path}")
@@ -651,7 +670,7 @@ def build_model_from_text(
     nodes: int = 32,
     n_blocks: int = 3,
     n_heads: int = 4,
-    head_type: Literal["hybrid", "reweight", "content"] = "hybrid",
+    head_type: Literal["hybrid", "rrpram", "content", "reweight"] = "hybrid",
     alpha: float = 0.5,
     seed: Optional[int] = 42,
 ):
