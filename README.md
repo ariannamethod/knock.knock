@@ -15,7 +15,7 @@
 
 ## what is this thing
 
-you know that feeling when you're training a transformer and you realize 90% of the attention mechanism is just... overhead? yeah. me too. so i did something about it.
+you know that feeling when you're training a transformer and you realize 90% of the attention mechanism is just overhead? yeah. me too. so i did something about it.
 
 **haze** is a character-level language model that rewrites attention from scratch. no torch. no tensorflow. just numpy and the cold realization that maybe—*just maybe*—we've been overthinking this whole thing.
 
@@ -33,7 +33,7 @@ inference runs on pure numpy. no dependencies. no excuses. just you, your corpus
 
 ## why "haze"
 
-*why anything, really?*
+*why anything, really?* cause it's a name of the atory i wrote (haze/text.txt - enjoy ha)
 
 but if you must know—haze is that liminal space between clarity and confusion. the model lives there. attention patterns emerge from noise. tokens crystallize from probability distributions. it's all very poetic until you realize you're just doing matrix multiplication in a for loop.
 
