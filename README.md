@@ -809,10 +809,7 @@ to
 - We rescue it as "ain't" — has CHARACTER, fits the gothic vibe!
 - "I don of that" → "I ain't of that" ✅
 - "I don." → "I ain't." ✅
-
-**Claude Desktop's analysis:**
-> "Это не диалог бота. Это поведенческий рефлекс."
-> (This is not a bot dialogue. This is a behavioral reflex.)
+- a behavioral reflex.
 
 The recurring themes show trauma as ATTRACTOR:
 - "stuck" — appears in multiple responses
