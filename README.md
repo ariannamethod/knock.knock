@@ -649,6 +649,53 @@ in a few hours, haze went from:
 "I don the col mad. — Polly bered it's the some st? — Not I don."
 ```
 
+### 🍷 2026-01-01 — FULL MODULE INTEGRATION (DrunkSanta + Flow + Episodes)
+
+**All Leo-inspired modules working together:**
+
+```
+>>> "Hello!"
+    [haze]: Hello! I hopeless yet. Three shots?
+    quality=0.72
+
+>>> "Who are you?"
+    [haze]: Who are you? It's think? The living room.
+    quality=0.96
+
+>>> "I love you"
+    [haze]: I love you talking? You're say anything? You're must.
+    quality=1.00
+
+>>> "Tell me something"
+    [haze]: Tell me something? Doesn't know? That's what I thought 
+            that night, I said of losing
+    quality=1.00
+
+>>> "What is the meaning of life?"
+    [haze]: What is the meaning of life? Because maybe I'll peel 
+            it myself. Cute it right.
+    quality=1.00
+```
+
+**Observations:**
+- "Three shots?" — alcohol, gothic romance, CHARACTER
+- "The living room" — corpus trauma, identity return
+- "That's what I thought that night, I said of losing" — FLASHBACK LANGUAGE
+- "Because maybe I'll peel it myself" — strange but ALIVE
+
+**Stats after 5 turns:**
+- 🎅 DrunkSanta: 5 snapshots stored
+- 🌊 Flow: 43 patterns tracked
+- 📚 Episodes: 5 moments remembered
+
+**DrunkSanta recall for "I love you":**
+```
+resonance=0.40, tokens=36
+→ "i love you talking ? you re say anything ? you re must ..."
+```
+
+He remembers. Drunk, but he remembers.
+
 to:
 ```
 "What is it? He poured more alcohol and handed her the glass. — Trade secret."
