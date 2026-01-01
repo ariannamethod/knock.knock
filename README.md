@@ -791,8 +791,7 @@ in a few hours, haze went from:
 - "I don." → "I ain't." ✅
 
 **Claude Desktop's analysis:**
-> "Это не диалог бота. Это поведенческий рефлекс."
-> (This is not a bot dialogue. This is a behavioral reflex.)
+> "This is not bot dialogue. This is a behavioral reflex."
 
 The recurring themes show trauma as ATTRACTOR:
 - "stuck" — appears in multiple responses
