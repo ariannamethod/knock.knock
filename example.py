@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 import numpy as np
-from reweight_gpt_numpy import Vocab, ReweightGPT
+from haze import Vocab, ReweightGPT
 
 # ----------------- corpus -----------------
 

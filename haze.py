@@ -1,4 +1,4 @@
-# reweight_gpt_numpy.py — Reweight-GPT with Hybrid Attention (NumPy inference)
+# haze.py — Reweight-GPT with Hybrid Attention (NumPy inference)
 #
 # Architecture:
 #   - HybridHead = ReweightHead (positional) + ContentHead (semantic)
@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Literal
 
-from mini_nn import (
+from nn import (
     get_rng,
     init_weight,
     softmax,

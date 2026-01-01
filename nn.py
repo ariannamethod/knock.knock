@@ -1,4 +1,4 @@
-# mini_nn.py — NumPy primitives for Reweight-GPT
+# nn.py — NumPy primitives for Reweight-GPT
 # No PyTorch, no dependencies beyond numpy
 
 from __future__ import annotations

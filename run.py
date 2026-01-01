@@ -17,7 +17,7 @@ import sys
 import argparse
 from pathlib import Path
 
-from reweight_gpt_numpy import (
+from haze import (
     Vocab,
     ReweightGPT,
     load_corpus,
