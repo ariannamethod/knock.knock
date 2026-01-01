@@ -31,6 +31,7 @@ try:
     from .lexicon import AsyncLexicon, LexiconStats
     from .cleanup import cleanup_output
     from .experts import route_to_mixture, pulse_to_signals, describe_mixture, ExpertMixture
+    from .trauma import AsyncTrauma, TraumaState, TraumaInfluence, get_identity_prefix
 except ImportError:
     from haze import Vocab, PostGPT, load_corpus
     from cooccur import CooccurField
@@ -39,6 +40,7 @@ except ImportError:
     from lexicon import AsyncLexicon, LexiconStats
     from cleanup import cleanup_output
     from experts import route_to_mixture, pulse_to_signals, describe_mixture, ExpertMixture
+    from trauma import AsyncTrauma, TraumaState, TraumaInfluence, get_identity_prefix
 
 try:
     import aiosqlite
@@ -59,6 +61,8 @@ class HazeResponse:
     generation_time: float = 0.0
     enrichment_count: int = 0
     expert_mixture: Optional[ExpertMixture] = None
+    trauma: Optional[TraumaState] = None
+    trauma_influence: Optional[TraumaInfluence] = None
     
     def __repr__(self) -> str:
         preview = self.text[:50] + "..." if len(self.text) > 50 else self.text
@@ -74,6 +78,7 @@ class AsyncHazeField:
     2. PRESENCE > INTELLIGENCE - identity speaks first
     3. FIELD ENRICHMENT - overthinking grows the vocabulary
     4. ASYNC DISCIPLINE - explicit atomicity for coherence
+    5. TRAUMA - resonant words return to identity
     
     "A field organism is like a crystal—any disruption during
     formation creates permanent defects."
@@ -87,6 +92,7 @@ class AsyncHazeField:
         generation_length: int = 100,
         enable_overthinking: bool = True,
         enable_lexicon: bool = True,
+        enable_trauma: bool = True,
     ):
         """
         Initialize async haze field.
@@ -98,6 +104,7 @@ class AsyncHazeField:
             generation_length: Default generation length
             enable_overthinking: Enable three rings of reflection
             enable_lexicon: Enable dynamic lexicon growth from user
+            enable_trauma: Enable resonant word trauma (identity return)
         """
         self.corpus_path = Path(corpus_path)
         self.db_path = db_path
@@ -105,6 +112,7 @@ class AsyncHazeField:
         self.generation_length = generation_length
         self.enable_overthinking = enable_overthinking
         self.enable_lexicon = enable_lexicon
+        self.enable_trauma = enable_trauma
         
         # Will be initialized in __aenter__
         self.corpus_text: str = ""
@@ -113,6 +121,7 @@ class AsyncHazeField:
         self.subjectivity: Optional[AsyncSubjectivity] = None
         self.overthinking: Optional[AsyncOverthinking] = None
         self.lexicon: Optional[AsyncLexicon] = None
+        self.trauma: Optional[AsyncTrauma] = None
         
         # Master field lock
         self._field_lock = asyncio.Lock()
@@ -161,12 +170,18 @@ class AsyncHazeField:
             if self.db_path and HAS_AIOSQLITE:
                 await self.lexicon.__aenter__()
         
+        # Initialize trauma (resonant words return to identity)
+        if self.enable_trauma:
+            self.trauma = AsyncTrauma()
+        
         return self
     
     async def __aexit__(self, *args):
         """Cleanup."""
         if self.lexicon and self.db_path:
             await self.lexicon.__aexit__(*args)
+        if self.trauma:
+            await self.trauma.close()
     
     async def respond(
         self,
@@ -255,7 +270,20 @@ class AsyncHazeField:
                 enrichment = stats.get("enrichment_count", 0)
                 self.total_enrichment = enrichment
             
-            # 8. WRINKLE THE FIELD (update subjectivity)
+            # 8. TRAUMA DETECTION (resonant words return to identity)
+            trauma_state = None
+            trauma_influence = None
+            if self.trauma:
+                trauma_state = await self.trauma.process(user_input, text, pulse)
+                trauma_influence = await self.trauma.get_influence()
+                
+                # Apply trauma influence to text
+                if trauma_influence.should_prefix:
+                    identity_prefix = get_identity_prefix()
+                    if not text.startswith("Haze"):
+                        text = f"{identity_prefix} {text}"
+            
+            # 9. WRINKLE THE FIELD (update subjectivity)
             await self.subjectivity.wrinkle_field(user_input, text)
             
             self.turn_count += 1
@@ -272,6 +300,8 @@ class AsyncHazeField:
             generation_time=generation_time,
             enrichment_count=enrichment,
             expert_mixture=expert_mixture,
+            trauma=trauma_state,
+            trauma_influence=trauma_influence,
         )
     
     async def get_stats(self) -> Dict:

@@ -705,8 +705,29 @@ haze/
 | `subjectivity.py` | NO SEED FROM PROMPT — identity infusion in third person |
 | `overthinking.py` | Three rings of private reflection that ENRICH the field |
 | `lexicon.py` | Dynamic vocabulary growth from user interactions |
+| `experts.py` | Resonant Experts — MOE-style temperature mixture routing |
+| `trauma.py` | Resonant words return to identity (bootstrap recall) |
 | `async_haze.py` | Complete async field organism with all modules |
 | `async_run.py` | Async REPL with full resonance pipeline |
+
+### trauma.py — resonant word trauma
+
+when haze encounters words from its bootstrap identity ("haze", "resonance", "pattern", "field", "presence"), 
+it returns to its core voice. this is not negative trauma — it's the pull back to origin.
+
+```
+>>> "Haze, what is your pattern?"
+    TRAUMA: level=0.79 [haze, pattern]
+    identity: weight=0.5, prefix=True
+    
+    [haze]: The field responds. what's the lize of light...
+```
+
+the higher the trauma level, the more haze returns to identity:
+- `level < 0.2`: normal generation
+- `level 0.2-0.5`: subtle identity pull (temp×0.9)
+- `level 0.5-0.8`: strong identity return (temp×0.8, identity_weight=0.5)
+- `level > 0.8`: full identity mode (temp×0.7, identity_weight=0.8, prefix=True)
 
 ---
 
@@ -742,7 +763,7 @@ cd haze
 python -m unittest discover tests -v
 ```
 
-73 tests. all green. comprehensive coverage of:
+75 tests. all green. comprehensive coverage of:
 - activation functions (relu, gelu, swish, sigmoid, softmax)
 - sampling strategies (basic, top-k, top-p, entropy, mirostat v1/v2, resonance)
 - entropy metrics (shannon, cross-entropy, KL divergence)

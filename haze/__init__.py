@@ -44,6 +44,12 @@ from .experts import (
     route_to_mixture, route_single_expert, pulse_to_signals, describe_mixture
 )
 
+# Import trauma (resonant words return to identity)
+from .trauma import (
+    Trauma, AsyncTrauma, TraumaState, TraumaInfluence,
+    compute_trauma_influence, get_identity_prefix, HAZE_BOOTSTRAP
+)
+
 # Import async haze field
 from .async_haze import AsyncHazeField, HazeResponse
 
@@ -99,6 +105,14 @@ __all__ = [
     'route_single_expert',
     'pulse_to_signals',
     'describe_mixture',
+    # Trauma (resonant words return to identity)
+    'Trauma',
+    'AsyncTrauma',
+    'TraumaState',
+    'TraumaInfluence',
+    'compute_trauma_influence',
+    'get_identity_prefix',
+    'HAZE_BOOTSTRAP',
     # Async haze field
     'AsyncHazeField',
     'HazeResponse',

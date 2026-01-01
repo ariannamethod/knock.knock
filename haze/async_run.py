@@ -192,6 +192,12 @@ def print_response(response: HazeResponse, state: AsyncREPLState):
         if response.expert_mixture:
             mixture_desc = describe_mixture(response.expert_mixture)
             print(f"  experts: {mixture_desc}")
+        # Show trauma if triggered
+        if response.trauma:
+            triggers = ", ".join(sorted(response.trauma.trigger_words)[:5])
+            print(f"  trauma: level={response.trauma.level:.2f} triggers=[{triggers}]")
+        if response.trauma_influence and response.trauma_influence.identity_weight > 0:
+            print(f"  identity: weight={response.trauma_influence.identity_weight:.2f} prefix={response.trauma_influence.should_prefix}")
         print(f"  temp={response.temperature:.2f} time={response.generation_time:.3f}s enrichment={response.enrichment_count}")
 
 
