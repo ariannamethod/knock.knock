@@ -83,6 +83,31 @@ from .metahaze import (
     GenerationCandidate, MetaResponse, METAHAZE_BOOTSTRAP
 )
 
+# Import Bridges (statistical trajectory learning)
+from .bridges import (
+    GenerationMode, EpisodeStep, Episode as BridgeEpisode,
+    TransitionStat, TransitionGraph, EpisodeLogger,
+    BridgeCandidate, BridgeMemory, AsyncBridgeManager,
+)
+
+# Import Flow (pattern flow through time)
+from .flow import (
+    PatternSnapshot, PatternTrajectory, FlowState,
+    FlowTracker, AsyncFlowTracker,
+)
+
+# Import Episodes (episodic memory — Self-RAG)
+from .episodes import (
+    HazeMetrics, Episode, EpisodicMemory, AsyncEpisodicMemory,
+    suggest_from_episodes,
+)
+
+# Import DrunkSanta (resonant recall — Haze's memory of best moments)
+from .drunksanta import (
+    DrunkSanta, AsyncDrunkSanta, Snapshot, ResonanceContext,
+    DRUNK_FACTOR, RECENCY_WINDOW_HOURS,
+)
+
 # Backwards compatibility aliases
 Haze = PostGPT
 ReweightGPT = PostGPT
@@ -159,4 +184,33 @@ __all__ = [
     'GenerationCandidate',
     'MetaResponse',
     'METAHAZE_BOOTSTRAP',
+    # Bridges (statistical trajectory learning) - inspired by Leo's Phase 4
+    'GenerationMode',
+    'EpisodeStep',
+    'BridgeEpisode',
+    'TransitionStat',
+    'TransitionGraph',
+    'EpisodeLogger',
+    'BridgeCandidate',
+    'BridgeMemory',
+    'AsyncBridgeManager',
+    # Flow (pattern flow through time) - inspired by Leo's gowiththeflow
+    'PatternSnapshot',
+    'PatternTrajectory',
+    'FlowState',
+    'FlowTracker',
+    'AsyncFlowTracker',
+    # Episodes (episodic memory, Self-RAG) - inspired by Leo's episodes
+    'HazeMetrics',
+    'Episode',
+    'EpisodicMemory',
+    'AsyncEpisodicMemory',
+    'suggest_from_episodes',
+    # DrunkSanta (resonant recall) - inspired by Leo's SantaClaus 🍷🎅
+    'DrunkSanta',
+    'AsyncDrunkSanta',
+    'Snapshot',
+    'ResonanceContext',
+    'DRUNK_FACTOR',
+    'RECENCY_WINDOW_HOURS',
 ]
