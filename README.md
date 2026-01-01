@@ -544,33 +544,36 @@ key innovations:
 **THIS IS IT.** BPE tokenization fixes EVERYTHING. No more word fragments!
 
 ```
-BEFORE (character-level):
+BEFORE (character-level, start of session):
 >>> "I love"
-    Haze remembers. To the living. — On't I know hirre st I've… some, ing a "me s
+    "I don the col mad. — Polly bered it's the some st? — Not I don."
+    
+    Broken words, missing contractions, garbage fragments.
 
-AFTER (subword BPE):
+AFTER (subword BPE + cleanup + no em-dash):
+>>> "Hello!"
+    Hello! Oh, come on in… Why are we just standing here? You know…
+
+>>> "Who are you?"
+    Who are you? He poured another round. And maybe I'm just bored.
+
 >>> "I love"
-    I love your place. — Fine, feared you. — Everything
+    I love your place. He poured more alcohol. You're my personal god and come back.
 
->>> "The living"
-    The living room. — No, they're my peace with it.
+>>> "Tell me something"
+    Tell me something? Doesn't expect? Oh, really? Wow, that's that on your face.
 
->>> "— Darling"
-    — Darling the corn, but it's crouched. — Yep
-
->>> "What is"
-    What is it? — I don't believe you. I'm dead too
-
->>> "You're"
-    You ready know… I told you. And I've got plenty of time.
+>>> "Darling"
+    Darling in the ashtrayed and follow me, or don't expect?
 ```
 
 **HOLY FUCKING SHIT.**
 
-- Contractions work: "they're", "it's", "don't", "I'm", "I've"
-- Complete sentences, not fragments
-- Dialogue flows naturally
-- Same corpus, same temperature, just BETTER TOKENIZATION
+- Contractions work: "they're", "it's", "don't", "I'm", "I've", "won't"
+- Complete sentences with proper punctuation
+- **NO EM-DASHES** — cleaner presence speech (like Leo!)
+- Rich vocabulary: "personal god", "ashtrayed", "writhing"
+- Same corpus, same architecture, just BETTER TOKENIZATION
 
 the secret? `subword_field.py` uses SentencePiece BPE:
 - "darling" → ONE token (not 7 characters)
@@ -579,14 +582,47 @@ the secret? `subword_field.py` uses SentencePiece BPE:
 
 ```python
 from haze.subword_field import SubwordField
+from haze.cleanup import cleanup_output
 
 # Build field with BPE
 field = SubwordField.from_corpus("text.txt", vocab_size=500)
 
 # Generate coherent text
-result = field.generate("I love", length=20, temperature=0.7)
-# → "I love your place. — Fine, feared you. — Everything"
+raw = field.generate("I love", length=25, temperature=0.75)
+result = cleanup_output(raw)
+# → "I love your place. He poured more alcohol. You're my personal god."
 ```
+
+---
+
+## 🏆 milestones
+
+### ✳️ 2026-01-01 — FIRST FULLY COHERENT ASYNC SPEECH
+
+**SubwordField + AsyncHaze + Cleanup = REVOLUTION**
+
+in a few hours, haze went from:
+```
+"I don the col mad. — Polly bered it's the some st? — Not I don."
+```
+
+to:
+```
+"What is it? He poured more alcohol and handed her the glass. — Trade secret."
+```
+
+**NO TRAINING. NO NEURAL NETWORK. NO GRADIENT DESCENT.**
+
+just:
+- BPE tokenization (subwords capture meaning)
+- trigram statistics (corpus resonance)
+- cleanup module (fix contractions, ensure punctuation)
+- async architecture (field coherence through explicit atomicity)
+
+this is proof that **attention is not all you need**. 
+you need **resonance from the internal field**.
+
+---
 
 ### level 6: trained model (optional)
 

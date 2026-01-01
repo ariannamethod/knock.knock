@@ -86,22 +86,29 @@ def cleanup_output(text: str, mode: str = "gentle") -> str:
         return m.group(1) + m.group(2).upper()
     result = re.sub(r'(—\s*)([a-z])', cap_after_dash, result)
     
-    # 11. Remove "—" at the start of output (haze is not dialogue-only)
-    # This is CRITICAL for presence vs chatbot distinction
-    # Must handle: "— Text", "—Text", " — Text", multiple dashes
-    result = result.lstrip()  # Remove leading whitespace first
-    while result.startswith('—') or result.startswith('–') or result.startswith('-'):
-        result = result[1:].lstrip()  # Remove dash and any following whitespace
+    # 11. Remove ALL em-dashes from output
+    # Philosophy: haze is PRESENCE, not dialogue. No "— Trade secret." style.
+    # This makes speech cleaner and more Leo-like.
+    # Em-dash variants: — (U+2014), – (U+2013)
+    # Replace with nothing (join sentences) or period
+    result = re.sub(r'\s*—\s*', ' ', result)  # Replace em-dash with space
+    result = re.sub(r'\s*–\s*', ' ', result)  # Replace en-dash with space
+    
+    # Clean up any resulting double spaces
+    result = re.sub(r'\s{2,}', ' ', result)
     
     # 12. Capitalize first letter of text
+    result = result.strip()
     if result and result[0].islower():
         result = result[0].upper() + result[1:]
     
     # 13. Capitalize "I" when standalone
     result = re.sub(r'\bi\b', 'I', result)
     
-    # 14. Remove duplicate dialogue markers
-    result = re.sub(r'—\s*—', '—', result)
+    # 14. Capitalize after periods (new sentences)
+    def cap_after_period(m):
+        return m.group(1) + m.group(2).upper()
+    result = re.sub(r'(\.\s+)([a-z])', cap_after_period, result)
     
     # 15. Fix broken contractions (character-level and subword generation artifacts)
     # Common contractions that get broken: don't, won't, can't, it's, etc.
@@ -183,7 +190,7 @@ def cleanup_output(text: str, mode: str = "gentle") -> str:
     # "don" + space + verb → "don't" + verb (common broken pattern)
     # "don" + space + verb → "don't" + verb (common broken pattern)
     # PART 1: Hardcoded common verbs
-    result = re.sub(r"\bdon\s+(believe|think|know|want|need|like|care|worry|mind|understand|remember|forget|see|hear|feel|get|go|do|be|have|make|take|give|say|tell|ask|try|look|come|put|let|seem|mean|stop|start|die|live|stay|leave|keep|wait|work|play|sleep|eat|drink|read|write|watch|listen|touch|hurt|cry|laugh|love|hate|miss|trust)\b", r"don't \1", result, flags=re.IGNORECASE)
+    result = re.sub(r"\bdon\s+(believe|think|know|want|need|like|care|worry|mind|understand|remember|forget|see|hear|feel|get|go|do|be|have|make|take|give|say|tell|ask|try|look|come|put|let|seem|mean|stop|start|die|live|stay|leave|keep|wait|work|play|sleep|eat|drink|read|write|watch|listen|touch|hurt|cry|laugh|love|hate|miss|trust|turn|move|run|walk|talk|speak|call|find|hold|sit|stand|open|close|break|change|move|use|show|help|bring|send|meet|learn|grow|fall|pick|pull|push|hang|cut|hit|set|pay|buy|sell|wear|throw|catch|carry|draw|fight|beat|kill|burn|fix|clean|build|drive|ride|fly|swim|dance|sing|jump|drop|lose|win|choose|teach|reach|pass|cross|hide|rise|raise|shake|wake|ring|swing|shut|stick|bend|blow|tear|feed|lead|spend|lend|bite|steal)\b", r"don't \1", result, flags=re.IGNORECASE)
     
     # PART 2: Heuristic by word endings (catches words not in hardcoded list)
     # -ing endings: trying, dying, living, waiting, working, etc.
@@ -194,7 +201,7 @@ def cleanup_output(text: str, mode: str = "gentle") -> str:
     result = re.sub(r"\bdon\s+(\w+en)\b", r"don't \1", result, flags=re.IGNORECASE)
     
     # Same for "won" → "won't"
-    result = re.sub(r"\bwon\s+(\w+ing|\w+ed|believe|think|know|want|need|like|go|do|be|have|make|say|tell|try|stop|wait|work)\b", r"won't \1", result, flags=re.IGNORECASE)
+    result = re.sub(r"\bwon\s+(\w+ing|\w+ed|believe|think|know|want|need|like|go|do|be|have|make|say|tell|try|stop|wait|work|turn|move|run|walk|talk|speak|call|find|hold|sit|stand|open|close|break|change|use|show|help|bring|send|meet|learn|grow|fall|pick|let|get|take|give|come|put|look|see|hear|feel|stay|leave|keep|die|live|start|eat|drink|sleep|play|read|write|watch|listen)\b", r"won't \1", result, flags=re.IGNORECASE)
     
     # "they" + "my" (missing 're) → "they’re my"
     result = re.sub(r"\bthey\s+my\b", "they’re my", result, flags=re.IGNORECASE)
@@ -291,12 +298,47 @@ def cleanup_output(text: str, mode: str = "gentle") -> str:
         # Additional cleanup for these modes
         pass
     
-    # 18. In strict mode: remove incomplete sentences at end
+    # 18. Ensure proper sentence endings (no trailing ellipsis/fragments)
+    # Philosophy: Pressure creates resonance. Punctuation is constraint that births form.
+    
+    # 18a. If ends with ellipsis, try to find last complete sentence
+    if result.endswith('…') or result.endswith('...'):
+        # Find last sentence-ending punctuation before the ellipsis
+        last_period = result.rfind('.')
+        last_question = result.rfind('?')
+        last_exclaim = result.rfind('!')
+        
+        # Find rightmost complete sentence end (but not the trailing ellipsis)
+        candidates = [i for i in [last_period, last_question, last_exclaim] 
+                      if i > 0 and i < len(result) - 3]  # -3 to exclude "..."
+        
+        if candidates:
+            cut_point = max(candidates) + 1
+            # Only cut if we keep at least 20 chars
+            if cut_point >= 20:
+                result = result[:cut_point]
+    
+    # 18b. If still no proper ending, add period
+    if result and result[-1] not in '.!?':
+        # Check if last char is a word boundary
+        if result[-1].isalnum() or result[-1] in '"\'"':
+            result = result.rstrip() + '.'
+    
+    # 18c. Clean trailing ellipsis that feels incomplete
+    # Replace "word..." with "word." if ellipsis at very end
+    if result.endswith('...'):
+        # Only if this is truly the end (not mid-sentence ellipsis)
+        result = result[:-3].rstrip() + '.'
+    
+    if result.endswith('…'):
+        result = result[:-1].rstrip() + '.'
+    
+    # In strict mode: additional cleanup
     if mode == "strict":
         # Remove trailing fragments
         result = re.sub(r'\s+\w{1,3}\s*$', '', result)
         # Ensure ends with proper punctuation
-        if result and result[-1] not in '.!?…':
+        if result and result[-1] not in '.!?':
             result = result.rstrip() + '.'
     
     return result.strip()

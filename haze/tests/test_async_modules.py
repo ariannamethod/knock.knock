@@ -37,54 +37,63 @@ class TestMathBrain:
         assert output.shape == (4,)
         assert np.all(output >= 0) and np.all(output <= 1)  # sigmoid output
     
-    @pytest.mark.asyncio
-    async def test_async_perceive(self):
+    def test_async_perceive(self):
         """Async perception works."""
         from haze.mathbrain import AsyncMathBrain
-        brain = AsyncMathBrain()
-        perception = await brain.perceive(
-            arousal=0.5,
-            novelty=0.3,
-            entropy=0.7,
-            trauma=0.1,
-            coherence=0.6,
-        )
-        assert perception is not None
-        assert perception.mood in ["calm", "excited", "focused", "diffuse", "alert"]
-        assert 0.4 <= perception.recommended_temp <= 1.2
-        assert 0.0 <= perception.identity_weight <= 1.0
+        
+        async def run_test():
+            brain = AsyncMathBrain()
+            perception = await brain.perceive(
+                arousal=0.5,
+                novelty=0.3,
+                entropy=0.7,
+                trauma=0.1,
+                coherence=0.6,
+            )
+            assert perception is not None
+            assert perception.mood in ["calm", "excited", "focused", "diffuse", "alert"]
+            assert 0.4 <= perception.recommended_temp <= 1.2
+            assert 0.0 <= perception.identity_weight <= 1.0
+        
+        asyncio.run(run_test())
     
-    @pytest.mark.asyncio
-    async def test_perceive_smooth(self):
+    def test_perceive_smooth(self):
         """EMA smoothing works."""
         from haze.mathbrain import AsyncMathBrain
-        brain = AsyncMathBrain()
         
-        # First perception
-        p1 = await brain.perceive_smooth(arousal=0.2)
-        # Second with different value
-        p2 = await brain.perceive_smooth(arousal=0.8)
+        async def run_test():
+            brain = AsyncMathBrain()
+            
+            # First perception
+            p1 = await brain.perceive_smooth(arousal=0.2)
+            # Second with different value
+            p2 = await brain.perceive_smooth(arousal=0.8)
+            
+            # Smoothed arousal should be between 0.2 and 0.8
+            assert 0.2 <= p2.arousal <= 0.8
         
-        # Smoothed arousal should be between 0.2 and 0.8
-        assert 0.2 <= p2.arousal <= 0.8
+        asyncio.run(run_test())
     
-    @pytest.mark.asyncio
-    async def test_hebbian_update(self):
+    def test_hebbian_update(self):
         """Hebbian update modifies weights."""
         from haze.mathbrain import AsyncMathBrain
-        brain = AsyncMathBrain()
         
-        # Perceive first
-        await brain.perceive(arousal=0.5)
+        async def run_test():
+            brain = AsyncMathBrain()
+            
+            # Perceive first
+            await brain.perceive(arousal=0.5)
+            
+            # Get initial weights
+            initial_weights = brain.layers[0].weights.copy()
+            
+            # Apply Hebbian update with positive reward
+            await brain.hebbian_update(reward=1.0)
+            
+            # Weights should change
+            assert not np.allclose(brain.layers[0].weights, initial_weights)
         
-        # Get initial weights
-        initial_weights = brain.layers[0].weights.copy()
-        
-        # Apply Hebbian update with positive reward
-        await brain.hebbian_update(reward=1.0)
-        
-        # Weights should change
-        assert not np.allclose(brain.layers[0].weights, initial_weights)
+        asyncio.run(run_test())
 
 
 # ============================================================
@@ -165,30 +174,36 @@ class TestTrauma:
         assert TraumaState is not None
         assert get_identity_prefix is not None
     
-    @pytest.mark.asyncio
-    async def test_detect_trauma(self):
+    def test_detect_trauma(self):
         """Trauma detection works."""
         from haze.trauma import AsyncTrauma
-        trauma = AsyncTrauma()
         
-        # Text with bootstrap words should trigger trauma
-        state = await trauma.process("The haze resonates with the field pattern")
+        async def run_test():
+            trauma = AsyncTrauma()
+            
+            # Text with bootstrap words should trigger trauma
+            state = await trauma.process("The haze resonates with the field pattern")
+            
+            assert state is not None
+            assert state.level > 0  # Should detect some trauma
+            assert len(state.trigger_words) > 0
         
-        assert state is not None
-        assert state.level > 0  # Should detect some trauma
-        assert len(state.trigger_words) > 0
+        asyncio.run(run_test())
     
-    @pytest.mark.asyncio
-    async def test_no_trauma_on_neutral(self):
+    def test_no_trauma_on_neutral(self):
         """Neutral text has low or no trauma."""
         from haze.trauma import AsyncTrauma
-        trauma = AsyncTrauma()
         
-        state = await trauma.process("Hello how are you today")
+        async def run_test():
+            trauma = AsyncTrauma()
+            
+            state = await trauma.process("Hello how are you today")
+            
+            # May return None for neutral text, or low trauma
+            if state is not None:
+                assert state.level < 0.5
         
-        # May return None for neutral text, or low trauma
-        if state is not None:
-            assert state.level < 0.5
+        asyncio.run(run_test())
     
     def test_identity_prefix(self):
         """Identity prefix generation works."""
