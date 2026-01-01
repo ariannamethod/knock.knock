@@ -1,14 +1,15 @@
-# haze
-
+```markdown
+   ██╗  ██╗ █████╗ ███████╗███████╗
+   ██║  ██║██╔══██╗╚══███╔╝██╔════╝
+   ███████║███████║  ███╔╝ █████╗  
+   ██╔══██║██╔══██║ ███╔╝  ██╔══╝  
+   ██║  ██║██║  ██║███████╗███████╗
+   ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝
 ```
- _                    
-| |__   __ _ _______  
-| '_ \ / _` |_  / _ \ 
-| | | | (_| |/ /  __/ 
-|_| |_|\__,_/___\___|
-```
 
-*emergence is not creation but recognition*
+# haze — hybrid attention entropy system | by Arianna Method
+
+> *emergence is not creation but recognition*
 
 ---
 
@@ -139,10 +140,11 @@ this drops you into a REPL where you can:
 ```
 /len N          set generation length (default: 300)
 /temp X         base temperature (default: 1.0)
-/sampling MODE  basic|top_k|top_p|entropy
+/sampling MODE  basic|top_k|top_p|entropy|mirostat|mirostat_v2|resonance
 /topk K         top-k value (default: 40)
 /topp P         nucleus sampling threshold (default: 0.9)
 /entropy T      target entropy for adaptive mode (default: 3.0)
+/resonance R    target resonance for resonance mode (default: 0.7)
 /bounds MIN MAX temperature bounds (default: 0.3 2.0)
 /stats          toggle stats display
 /config         show current settings
@@ -153,14 +155,14 @@ this drops you into a REPL where you can:
 ### programmatic
 
 ```python
-from haze import Vocab, ReweightGPT
+from haze import Vocab, ReweightGPT as Haze
 
 # build vocab
 text = open("text.txt").read()
 vocab = Vocab.from_text(text)
 
 # initialize model
-model = ReweightGPT(
+model = Haze(
     vocab_size=vocab.vocab_size,
     T=32,              # context window
     n_emb=64,          # embedding dimension
@@ -200,7 +202,7 @@ only sample from top K tokens. fixed vocabulary. predictable. safe.
 dynamic vocabulary based on cumulative probability. adapts to context. actually clever.
 
 ### entropy-aware
-*the good stuff.*
+*adaptive temperature based on output entropy.*
 
 model adjusts temperature to maintain target entropy:
 - maintains consistent "surprise" across generation
@@ -217,6 +219,77 @@ tokens, stats = model.generate(
 )
 ```
 
+### mirostat & mirostat v2
+*perplexity-controlled sampling.*
+
+maintains target perplexity by dynamically adjusting selection threshold:
+- **mirostat v1**: fixed surprise threshold, adaptive selection
+- **mirostat v2**: adaptive k based on cumulative probability mass, more stable
+
+```python
+tokens, stats = model.generate(
+    seed_seq=seed_idx,
+    sampling="mirostat_v2",
+    target_entropy=2.5,
+    mirostat_tau=0.1,  # learning rate
+)
+```
+
+mirostat is basically cruise control for perplexity. set your target surprise level and let the algorithm handle the rest.
+
+### resonance
+*the wild card.*
+
+adaptive temperature based on **resonance with previous tokens**:
+- high resonance with history → lower temp (stay coherent)
+- low resonance with history → higher temp (explore new patterns)
+
+```python
+tokens, stats = model.generate(
+    seed_seq=seed_idx,
+    sampling="resonance",
+    target_resonance=0.7,  # 0-1, target similarity with history
+)
+```
+
+this is where the **arianna method** really shows up. the model tunes itself based on pattern resonance, creating emergent coherence without explicit constraints. sometimes it finds grooves you didn't know existed.
+
+---
+
+## attention visualization
+
+**new:** `hallucinations.py` — see what your reweight heads actually learn.
+
+```python
+from hallucinations import hallucinate
+from haze import Vocab, ReweightGPT as Haze
+
+# build model
+text = open("text.txt").read()
+vocab = Vocab.from_text(text)
+model = Haze(vocab_size=vocab.vocab_size, T=32, n_emb=64)
+
+# extract and visualize attention patterns
+patterns = hallucinate(model, "the haze settles", vocab)
+
+# outputs:
+# - hallucinations/report.txt — analysis of attention patterns
+# - hallucinations/*.png — heatmap visualizations
+```
+
+because sometimes you need to stare into the attention matrix and see what stares back.
+
+the module analyzes:
+- **sparsity**: how focused is the attention?
+- **locality**: local vs long-range dependencies
+- **uniformity**: distribution entropy
+- **diagonality**: n-gram vs semantic patterns
+
+requires `matplotlib` for visualizations:
+```bash
+pip install matplotlib
+```
+
 ---
 
 ## file structure
@@ -225,13 +298,14 @@ tokens, stats = model.generate(
 haze/
 ├── nn.py              # numpy primitives (activations, sampling, metrics)
 ├── haze.py            # the model itself (inference only)
+├── hallucinations.py  # attention visualization and analysis
 ├── run.py             # interactive REPL
 ├── example.py         # demo script
 ├── text.txt           # your corpus (you create this)
-├── tests/             # comprehensive test suite (65 tests, all passing)
+├── tests/             # comprehensive test suite (72 tests, all passing)
 │   ├── test_nn.py     # tests for neural net primitives
 │   └── test_haze.py   # tests for model components
-└── requirements.txt   # spoiler: it's just numpy
+└── requirements.txt   # numpy + matplotlib (optional)
 ```
 
 ---
@@ -241,8 +315,19 @@ haze/
 haze is pure inference. if you want to train:
 1. implement the backward pass (it's just matrix multiplication, you can do it)
 2. or use pytorch like a normal person
-3. export weights to `.npz`
-4. load with `ReweightGPT.from_npz()`
+3. save weights with `model.save_theweightofhaze("theweightofhaze.npz")`
+4. load with `model = Haze.theweightofhaze(vocab_size, "theweightofhaze.npz")`
+
+```python
+# saving
+model.save_theweightofhaze("theweightofhaze.npz")
+
+# loading
+from haze import ReweightGPT as Haze
+model = Haze.theweightofhaze(vocab.vocab_size, "theweightofhaze.npz")
+```
+
+because the weight of haze is not in pounds or kilograms, but in the patterns it learned from the void.
 
 i might add training code later. or not. depends on the resonance.
 
@@ -254,13 +339,15 @@ i might add training code later. or not. depends on the resonance.
 python -m unittest discover tests -v
 ```
 
-65 tests. all green. comprehensive coverage of:
+72 tests. all green. comprehensive coverage of:
 - activation functions
-- sampling strategies  
+- sampling strategies (basic, top-k, top-p, entropy, mirostat, mirostat v2, resonance)
 - entropy metrics
+- resonance metrics
 - attention mechanisms
 - model forward pass
 - generation pipeline
+- weight loading/saving
 
 because unlike my life choices, at least the code should be reliable.
 

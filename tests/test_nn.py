@@ -208,6 +208,36 @@ class TestSampling(unittest.TestCase):
         token, new_mu = result
         self.assertIsInstance(token, int)
         self.assertIsInstance(new_mu, float)
+    
+    def test_sample_mirostat_v2_returns_tuple(self):
+        """Test mirostat v2 returns (token, new_mu)."""
+        result = nn.sample_mirostat_v2(
+            self.logits,
+            target_entropy=2.0,
+            tau=0.1,
+            mu=5.0,
+            rng=self.rng
+        )
+        self.assertIsInstance(result, tuple)
+        self.assertEqual(len(result), 2)
+        token, new_mu = result
+        self.assertIsInstance(token, int)
+        self.assertIsInstance(new_mu, float)
+    
+    def test_sample_mirostat_v2_clips_mu(self):
+        """Test mirostat v2 clips mu to reasonable range."""
+        target_entropy = 2.0
+        result = nn.sample_mirostat_v2(
+            self.logits,
+            target_entropy=target_entropy,
+            tau=0.5,
+            mu=100.0,  # very high mu
+            rng=self.rng
+        )
+        _, new_mu = result
+        # mu should be clipped to reasonable range
+        self.assertLessEqual(new_mu, target_entropy * 3.0)
+        self.assertGreaterEqual(new_mu, target_entropy * 0.5)
 
 
 class TestEntropyMetrics(unittest.TestCase):
@@ -281,6 +311,34 @@ class TestAdaptiveTemperature(unittest.TestCase):
         logits = np.array([1.0, 5.0, 2.0])
         margin = nn.margin_score(logits)
         self.assertGreater(margin, 0)
+    
+    def test_resonance_temperature_bounds(self):
+        """Test resonance temperature respects bounds."""
+        logits = np.random.randn(10)
+        history = [np.random.randn(10) for _ in range(5)]
+        temp = nn.resonance_temperature(
+            logits,
+            history,
+            target_resonance=0.7,
+            min_temp=0.5,
+            max_temp=1.5
+        )
+        self.assertGreaterEqual(temp, 0.5)
+        self.assertLessEqual(temp, 1.5)
+    
+    def test_resonance_temperature_no_history(self):
+        """Test resonance temperature with empty history."""
+        logits = np.random.randn(10)
+        temp = nn.resonance_temperature(
+            logits,
+            [],
+            target_resonance=0.7,
+            min_temp=0.5,
+            max_temp=1.5
+        )
+        # should return mid-point when no history
+        self.assertGreater(temp, 0.5)
+        self.assertLess(temp, 1.5)
 
 
 class TestResonanceMetrics(unittest.TestCase):

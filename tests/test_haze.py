@@ -251,6 +251,46 @@ class TestReweightGPT(unittest.TestCase):
         )
         self.assertEqual(len(tokens), 10)
     
+    def test_generate_mirostat(self):
+        """Test mirostat v1 sampling."""
+        seed_seq = [0, 1, 2]
+        tokens, stats = self.model.generate(
+            seed_seq,
+            length=10,
+            sampling="mirostat",
+            target_entropy=2.0,
+            mirostat_tau=0.1
+        )
+        self.assertEqual(len(tokens), 10)
+        self.assertIn("mean_entropy", stats)
+    
+    def test_generate_mirostat_v2(self):
+        """Test mirostat v2 sampling."""
+        seed_seq = [0, 1, 2]
+        tokens, stats = self.model.generate(
+            seed_seq,
+            length=10,
+            sampling="mirostat_v2",
+            target_entropy=2.0,
+            mirostat_tau=0.1
+        )
+        self.assertEqual(len(tokens), 10)
+        self.assertIn("mean_entropy", stats)
+    
+    def test_generate_resonance(self):
+        """Test resonance-based sampling."""
+        seed_seq = [0, 1, 2]
+        tokens, stats = self.model.generate(
+            seed_seq,
+            length=20,
+            sampling="resonance",
+            target_resonance=0.7
+        )
+        self.assertEqual(len(tokens), 20)
+        self.assertIn("mean_resonance", stats)
+        self.assertGreater(stats["mean_resonance"], 0)
+        self.assertLess(stats["mean_resonance"], 1.0)
+    
     def test_generate_empty_seed(self):
         """Test generation with empty seed."""
         tokens, _ = self.model.generate(
@@ -259,6 +299,39 @@ class TestReweightGPT(unittest.TestCase):
             temperature=1.0
         )
         self.assertEqual(len(tokens), 10)
+    
+    def test_save_and_load_theweightofhaze(self):
+        """Test saving and loading model weights."""
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix='.npz', delete=False) as f:
+            temp_path = f.name
+        
+        try:
+            # save weights
+            self.model.save_theweightofhaze(temp_path)
+            self.assertTrue(os.path.exists(temp_path))
+            
+            # load weights
+            loaded_model = haze.ReweightGPT.theweightofhaze(
+                vocab_size=self.vocab_size,
+                path=temp_path
+            )
+            
+            # verify structure
+            self.assertEqual(loaded_model.vocab_size, self.vocab_size)
+            self.assertEqual(loaded_model.T, self.T)
+            self.assertEqual(loaded_model.n_emb, self.n_emb)
+            
+            # test that loaded model can generate
+            tokens, _ = loaded_model.generate(
+                seed_seq=[0, 1, 2],
+                length=5,
+                temperature=1.0
+            )
+            self.assertEqual(len(tokens), 5)
+        finally:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
 
 
 class TestModelVariants(unittest.TestCase):
