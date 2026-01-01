@@ -10,6 +10,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import haze
+import nn
 
 
 class TestVocab(unittest.TestCase):
@@ -57,7 +58,7 @@ class TestReweightHead(unittest.TestCase):
     """Test ReweightHead attention."""
     
     def setUp(self):
-        self.rng = haze.get_rng(42)
+        self.rng = nn.get_rng(42)
         self.n_emb = 16
         self.head_dim = 8
         self.T = 10
@@ -80,7 +81,7 @@ class TestContentHead(unittest.TestCase):
     """Test ContentHead attention."""
     
     def setUp(self):
-        self.rng = haze.get_rng(42)
+        self.rng = nn.get_rng(42)
         self.n_emb = 16
         self.head_dim = 8
         self.T = 10
@@ -103,7 +104,7 @@ class TestHybridHead(unittest.TestCase):
     """Test HybridHead attention."""
     
     def setUp(self):
-        self.rng = haze.get_rng(42)
+        self.rng = nn.get_rng(42)
         self.n_emb = 16
         self.head_dim = 8
         self.T = 10
@@ -124,7 +125,7 @@ class TestBlock(unittest.TestCase):
     """Test transformer Block."""
     
     def setUp(self):
-        self.rng = haze.get_rng(42)
+        self.rng = nn.get_rng(42)
         self.n_emb = 32
         self.T = 10
         self.nodes = 64
