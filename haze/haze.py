@@ -31,6 +31,11 @@ try:
         resonance_temperature,
         entropy_bits,
         confidence_score,
+        detect_repetition_loop,
+        sample_with_loop_avoidance,
+        sample_entropy_aware_v2,
+        detect_rhythm_pattern,
+        compute_coherence_score,
     )
 except ImportError:
     from nn import (
@@ -49,6 +54,11 @@ except ImportError:
         resonance_temperature,
         entropy_bits,
         confidence_score,
+        detect_repetition_loop,
+        sample_with_loop_avoidance,
+        sample_entropy_aware_v2,
+        detect_rhythm_pattern,
+        compute_coherence_score,
     )
 
 
@@ -384,7 +394,7 @@ class PostGPT:
         seed_seq: List[int],
         length: int = 200,
         temperature: float = 1.0,
-        sampling: Literal["basic", "top_k", "top_p", "entropy", "mirostat", "mirostat_v2", "resonance"] = "entropy",
+        sampling: Literal["basic", "top_k", "top_p", "entropy", "entropy_v2", "mirostat", "mirostat_v2", "resonance", "loop_aware"] = "entropy",
         top_k: int = 40,
         top_p: float = 0.9,
         target_entropy: float = 3.0,
@@ -392,21 +402,31 @@ class PostGPT:
         min_temp: float = 0.3,
         max_temp: float = 2.0,
         mirostat_tau: float = 0.1,
+        loop_penalty: float = 0.5,
+        enable_loop_detection: bool = True,
     ) -> tuple[List[int], dict]:
         """
         Generate tokens with various sampling strategies.
+        
+        Enhanced with:
+        - Loop detection and avoidance
+        - Entropy-aware v2 with momentum
+        - Coherence tracking
+        - Rhythm detection
         
         Args:
             seed_seq: initial token indices
             length: number of tokens to generate
             temperature: base temperature (used differently per strategy)
-            sampling: strategy - "basic", "top_k", "top_p", "entropy", "mirostat", "mirostat_v2", "resonance"
+            sampling: strategy - "basic", "top_k", "top_p", "entropy", "entropy_v2", "mirostat", "mirostat_v2", "resonance", "loop_aware"
             top_k: k for top-k sampling
             top_p: p for nucleus sampling
             target_entropy: target entropy for entropy-aware and mirostat sampling
             target_resonance: target resonance for resonance-based sampling
             min_temp, max_temp: bounds for adaptive temperature
             mirostat_tau: learning rate for mirostat sampling
+            loop_penalty: strength of loop avoidance penalty
+            enable_loop_detection: whether to detect and avoid loops
         
         Returns:
             (tokens, stats) where stats contains generation metrics
@@ -432,6 +452,8 @@ class PostGPT:
         confidences = []
         temps_used = []
         resonances = []
+        coherence_scores = []
+        loop_detections = 0
         
         # mirostat state
         mu = target_entropy * 2.0  # initial mu
@@ -440,17 +462,61 @@ class PostGPT:
         history_logits = []
         history_window = 10
 
-        for _ in range(length):
+        for step in range(length):
             logits = self.logits(seq)
-            logits_last = logits[-1]
+            logits_last = logits[-1].copy()
 
             # track metrics
             probs = softmax(logits_last)
             entropies.append(entropy_bits(probs))
             confidences.append(confidence_score(logits_last))
+            
+            # check for loops
+            is_looping = False
+            if enable_loop_detection and len(out) >= 4:
+                is_looping, loop_len = detect_repetition_loop(out)
+                if is_looping:
+                    loop_detections += 1
+                    # Apply penalty to avoid continuing loop
+                    if loop_len > 0 and len(out) >= loop_len:
+                        pattern = out[-loop_len:]
+                        if pattern:
+                            next_expected = pattern[0]
+                            if 0 <= next_expected < len(logits_last):
+                                logits_last[next_expected] -= loop_penalty * 10.0
 
             # sampling strategy
-            if sampling == "entropy":
+            if sampling == "entropy_v2":
+                # Enhanced entropy-aware sampling with momentum
+                nxt, temp = sample_entropy_aware_v2(
+                    logits_last,
+                    target_entropy=target_entropy,
+                    recent_entropies=entropies,
+                    temperature=temperature if not temps_used else temps_used[-1],
+                    rng=self.rng,
+                    min_temp=min_temp,
+                    max_temp=max_temp,
+                )
+                temps_used.append(temp)
+                
+            elif sampling == "loop_aware":
+                # Loop-aware sampling
+                temp = entropy_temperature(
+                    logits_last,
+                    target_entropy=target_entropy,
+                    min_temp=min_temp,
+                    max_temp=max_temp,
+                )
+                temps_used.append(temp)
+                nxt = sample_with_loop_avoidance(
+                    logits_last,
+                    recent_tokens=out,
+                    temperature=temp,
+                    rng=self.rng,
+                    penalty_strength=loop_penalty,
+                )
+            
+            elif sampling == "entropy":
                 # adaptive temperature based on current entropy
                 temp = entropy_temperature(
                     logits_last,
@@ -521,10 +587,15 @@ class PostGPT:
             out.append(nxt)
             
             # update resonance history
-            if sampling == "resonance":
-                history_logits.append(logits_last.copy())
+            if sampling in ["resonance", "entropy_v2", "loop_aware"]:
+                history_logits.append(logits[-1].copy())
                 if len(history_logits) > history_window:
                     history_logits.pop(0)
+            
+            # compute coherence if we have history
+            if len(history_logits) >= 2:
+                coherence = compute_coherence_score(history_logits)
+                coherence_scores.append(coherence)
 
             # shift window
             seq = np.roll(seq, -1)
@@ -537,12 +608,18 @@ class PostGPT:
             "min_entropy": float(np.min(entropies)),
             "max_entropy": float(np.max(entropies)),
             "entropy_std": float(np.std(entropies)),
+            "loop_detections": loop_detections,
         }
         
         # add resonance stats if available
         if resonances:
             stats["mean_resonance"] = float(np.mean(resonances))
             stats["resonance_std"] = float(np.std(resonances))
+        
+        # add coherence stats if available
+        if coherence_scores:
+            stats["mean_coherence"] = float(np.mean(coherence_scores))
+            stats["coherence_std"] = float(np.std(coherence_scores))
 
         return out, stats
 
