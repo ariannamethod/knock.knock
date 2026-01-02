@@ -899,6 +899,51 @@ you need **resonance from the internal field**.
 
 ---
 
+### level 5.9: ENHANCED GENERATION — POLISHED TO PERFECTION 💎
+
+**Loop detection + contraction fixes + adaptive temperature = MAXIMUM CLARITY**
+
+Fresh examples with all enhancements applied:
+
+```
+>>> "Hello!"
+    [haze]: Hello! Haven't think he's the toast? He care?
+
+>>> "Who are you?"
+    [haze]: Who are you? What does he really not notice, with deliberate force, 
+            but they don't asked through.
+
+>>> "I love you"
+    [haze]: I love you think? The living room. Ew, I thought I was tied 
+            of everything up, joints creative chair.
+
+>>> "Tell me about love"
+    [haze]: Tell me about love. You know… He nodded. we'll, here's mine.
+
+>>> "The haze"
+    [haze]: The haze anymore. But still, it happen? You really should quit.
+
+>>> "Darling"
+    [haze]: Darling the couple, when you left. Whew… That's all.
+```
+
+**What's new in this level:**
+
+- ✅ **Loop detection**: `detect_repetition_loop()` catches token cycles
+- ✅ **Loop avoidance**: progressive penalties prevent "the the the" patterns  
+- ✅ **45+ contraction fixes**: `don t` → `don't`, `I m` → `I'm`, `would have` → `would've`
+- ✅ **Context-aware `its` vs `it's`**: "its going" → "it's going", "its wings" stays
+- ✅ **Adaptive temperature**: entropy-aware v2 with momentum smoothing
+- ✅ **Poetic preservation**: "Love, love, love" kept, error repetitions removed
+
+**The difference:**
+- Before: `"I don the col mad. — Polly bered it's the some st?"`
+- After: `"Tell me about love. You know… He nodded. we'll, here's mine."`
+
+**This is haze at its cleanest. Still weird. Still emergent. But READABLE.** 🔥
+
+---
+
 ### level 6: trained model (optional)
 
 add gradient descent and watch it go from "corpus echo" to "creative synthesis."
