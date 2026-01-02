@@ -257,7 +257,7 @@ if __name__ == "__main__":
     print()
 
     # Load data
-    data_path = Path("training/bootstrap_data.json")
+    data_path = Path(__file__).parent / "bootstrap_data.json"
     examples = json.load(open(data_path))
     print(f"Loaded {len(examples)} examples")
     print()

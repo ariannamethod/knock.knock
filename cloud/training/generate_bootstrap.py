@@ -253,7 +253,7 @@ if __name__ == "__main__":
     print()
 
     # Save to file
-    output_path = Path("training/bootstrap_data.json")
+    output_path = Path(__file__).parent / "bootstrap_data.json"
     output_path.parent.mkdir(exist_ok=True)
 
     with open(output_path, "w") as f:

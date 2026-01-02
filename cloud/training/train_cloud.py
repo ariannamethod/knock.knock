@@ -198,7 +198,7 @@ if __name__ == "__main__":
     print()
 
     # Load data
-    data_path = Path("training/bootstrap_data.json")
+    data_path = Path(__file__).parent / "bootstrap_data.json"
     if not data_path.exists():
         print(f"[error] {data_path} not found")
         print("Run generate_bootstrap.py first!")
