@@ -282,12 +282,24 @@ class AsyncHazeField:
             if self.use_subword and self.subword_field is not None:
                 # USE SUBWORD FIELD — coherent output with BPE!
                 # seed_text is already the internal seed from field (not from prompt)
-                raw_text = self.subword_field.generate(
-                    seed_text=seed_text,
-                    length=length,
-                    temperature=adjusted_temp,
-                    mode="trigram"
-                )
+                # Use generate_enhanced with loop avoidance for cleaner output
+                if hasattr(self.subword_field, 'generate_enhanced'):
+                    raw_text = self.subword_field.generate_enhanced(
+                        seed_text=seed_text,
+                        length=length,
+                        temperature=adjusted_temp,
+                        mode="trigram",
+                        loop_penalty=0.4,
+                        adaptive_temp=True,
+                        target_entropy=2.5,
+                    )
+                else:
+                    raw_text = self.subword_field.generate(
+                        seed_text=seed_text,
+                        length=length,
+                        temperature=adjusted_temp,
+                        mode="trigram"
+                    )
             else:
                 # Fallback to character-level field
                 generated_tokens = self.field.generate_from_corpus(

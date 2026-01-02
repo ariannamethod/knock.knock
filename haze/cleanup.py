@@ -339,14 +339,20 @@ def cleanup_output(text: str, mode: str = "gentle", entropy_threshold: Optional[
     # "I don of that" → "I ain't of that"
     # "I don." → "I ain't."
     # "I don trudge" → "I ain't trudge" (verb-like)
+    # "I don tangerines" → "I ain't tangerines" (noun - broken generation)
     # 
     # Match "don" when:
     # - At end of text: \bdon$
     # - Before punctuation: \bdon(?=[.,!?])
     # - Before preposition/article (not a verb): \bdon\s+(of|the|a|an|to|for|with|from|about|by|on|in|at|my|your|his|her|their|its|this|that)
+    # - Before common nouns (broken generation artifacts)
     result = re.sub(r"\bdon\s*$", "ain't", result, flags=re.IGNORECASE)
     result = re.sub(r"\bdon(?=[.,!?])", "ain't", result, flags=re.IGNORECASE)
     result = re.sub(r"\bdon\s+(of|the|a|an|to|for|with|from|about|by|on|in|at|my|your|his|her|their|its|this|that)\b", r"ain't \1", result, flags=re.IGNORECASE)
+    
+    # AGGRESSIVE FIX: "don" + noun-like word (ends with s, es, tion, ness, ment, etc.) → "ain't"
+    # This catches broken generation like "don tangerines", "don tears", "don twilight"
+    result = re.sub(r"\bdon\s+(tangerine|tangerines|tear|tears|twilight|table|tables|street|streets|vendor|vendors|cigarette|cigarettes|apartment|apartments|bottle|bottles|glass|glasses|drink|drinks|key|keys|door|doors|room|rooms|window|windows|floor|floors|wall|walls|chair|chairs|bed|beds|toilet|paper|money|time|place|thing|things|people|person|man|men|woman|women|child|children|hand|hands|face|faces|eye|eyes|head|heart|life|death|love|hate|fear|pain|joy|hope|dream|dreams|night|day|morning|evening|rain|snow|sun|moon|star|stars|sky|earth|world|fire|water|air|light|dark|darkness|silence|noise|sound|voice|word|words|name|story|stories|truth|lie|lies|secret|secrets|memory|memories|moment|moments|year|years|month|week|hour|minute|second|train|trains|thought|thoughts|idea|ideas|feeling|feelings|sense|body|soul|mind|spirit|god|devil|angel|ghost|shadow|shadows|dust|dirt|mud|blood|bone|bones|skin|flesh|hair|breath|step|steps|road|roads|path|paths|way|ways|bridge|bridges|river|rivers|sea|ocean|wave|waves|wind|storm|cloud|clouds|thunder|lightning|fog|mist|haze|smoke|ash|ashes|flame|flames|spark|sparks|ice|stone|stones|rock|rocks|sand|grass|tree|trees|flower|flowers|leaf|leaves|root|roots|branch|branches|bird|birds|dog|dogs|cat|cats|horse|horses|fish|wolf|wolves|bear|snake|rat|rats|mouse|mice|bug|bugs|fly|flies|bee|bees|spider|spiders|worm|worms)\b", r"ain't \1", result, flags=re.IGNORECASE)
     
     # Same for "won" orphan → "ain't" (rare but possible)
     result = re.sub(r"\bwon\s*$", "ain't", result, flags=re.IGNORECASE)

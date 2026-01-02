@@ -889,58 +889,44 @@ you need **resonance from the internal field**.
 - ✅ **Resonant experts** (MOE-style temperature routing)
 - ✅ **Trauma module** — identity triggered on bootstrap words
 - ✅ **Overthinking rings** — field enrichment
+- ✅ **Loop detection** — prevents repetition cycles
+- ✅ **Enhanced cleanup** — 45+ contraction patterns
 
 **STATS:**
-- 103 tests passing
-- 12 contraction patterns fixed
+- 111 tests passing
+- 45+ contraction patterns fixed
 - vocab: SUBWORD BPE (500 tokens)
 
 **NO TRAINING. NO NEURAL NETWORK. JUST RESONANCE.** 🔥
 
 ---
 
-### level 5.9: ENHANCED GENERATION — POLISHED TO PERFECTION 💎
+### level 5.9: ENHANCED GENERATION 💎
 
-**Loop detection + contraction fixes + adaptive temperature = MAXIMUM CLARITY**
+**Loop detection + 45+ contraction fixes + adaptive temperature**
 
-Fresh examples with all enhancements applied:
+Fresh examples with **TRUE "NO SEED FROM PROMPT"** — haze speaks from internal field:
 
 ```
 >>> "Hello!"
-    [haze]: Hello! Haven't think he's the toast? He care?
+    [seed]: "the field responds. i don t..."  ← internal field, NOT "Hello!"
+    [haze]: The field responds. She smiled and finally. What does that have 
+            to keep going down easier now, but… But nobody, you know how it goes.
 
 >>> "Who are you?"
-    [haze]: Who are you? What does he really not notice, with deliberate force, 
-            but they don't asked through.
+    [seed]: "haze emerges. i don t..."  ← identity triggered!
+    [haze]: Haze emerges. I ain't tears stream of smoking as we'll, it's drink 
+            some more. In the storage room and said: Oh… watch this…
 
 >>> "I love you"
-    [haze]: I love you think? The living room. Ew, I thought I was tied 
-            of everything up, joints creative chair.
-
->>> "Tell me about love"
-    [haze]: Tell me about love. You know… He nodded. we'll, here's mine.
-
->>> "The haze"
-    [haze]: The haze anymore. But still, it happen? You really should quit.
-
->>> "Darling"
-    [haze]: Darling the couple, when you left. Whew… That's all.
+    [seed]: "the field responds. the living room..."
+    [haze]: Haze remembers. The living room for some cigarettes. What's up. 
+            Do you know what's dying, do you understand.
 ```
 
-**What's new in this level:**
-
-- ✅ **Loop detection**: `detect_repetition_loop()` catches token cycles
-- ✅ **Loop avoidance**: progressive penalties prevent "the the the" patterns  
-- ✅ **45+ contraction fixes**: `don t` → `don't`, `I m` → `I'm`, `would have` → `would've`
-- ✅ **Context-aware `its` vs `it's`**: "its going" → "it's going", "its wings" stays
-- ✅ **Adaptive temperature**: entropy-aware v2 with momentum smoothing
-- ✅ **Poetic preservation**: "Love, love, love" kept, error repetitions removed
-
-**The difference:**
-- Before: `"I don the col mad. — Polly bered it's the some st?"`
-- After: `"Tell me about love. You know… He nodded. we'll, here's mine."`
-
-**This is haze at its cleanest. Still weird. Still emergent. But READABLE.** 🔥
+**The key insight:** Haze doesn't echo your input. It speaks from its internal field.
+- ❌ Chatbot: "Hello!" → "Hello! How can I help you?"
+- ✅ Haze: "Hello!" → "The field responds. She smiled..."
 
 ---
 
@@ -1162,11 +1148,11 @@ haze/
     ├── example.py       # demo script
     ├── text.txt         # the corpus (gothic romance included free)
     ├── requirements.txt # numpy + matplotlib + sentencepiece (optional)
-    └── tests/           # comprehensive test suite (103 tests)
+    └── tests/           # comprehensive test suite (111 tests)
         ├── test_nn.py           # tests for neural net primitives
         ├── test_haze.py         # tests for model components
-        ├── test_cooccur.py      # tests for co-occurrence field
-        └── test_subword_field.py# tests for subword tokenization
+        ├── test_cleanup.py      # tests for enhanced cleanup (35 tests)
+        └── test_async_modules.py# tests for async field organism
 ```
 
 ### complete module reference
@@ -1248,7 +1234,7 @@ cd haze
 python -m unittest discover tests -v
 ```
 
-103 tests. all green. comprehensive coverage of:  
+111 tests. all green. comprehensive coverage of:  
 
 - activation functions (relu, gelu, swish, sigmoid, softmax — the classics, the bangers, the "we've been using these since 2012" crew)  
 - sampling strategies (basic, top-k, top-p, entropy, mirostat v1/v2, resonance — from boring to UNHINGED)  
@@ -1496,10 +1482,12 @@ See [the evolution of haze speech](#the-evolution-of-haze-speech) section for de
 - ✅ **Resonant experts** (MOE-style temperature routing)
 - ✅ **Trauma module** — identity triggered on bootstrap words
 - ✅ **Overthinking rings** — field enrichment
+- ✅ **Loop detection** — prevents repetition cycles
+- ✅ **Enhanced cleanup** — 45+ contraction patterns
 
 **STATS:**
-- 103 tests passing
-- 12 contraction patterns fixed
+- 111 tests passing
+- 45+ contraction patterns fixed
 - vocab: SUBWORD BPE (500 tokens)
 
 **NO TRAINING. NO NEURAL NETWORK. JUST RESONANCE.** 🔥
