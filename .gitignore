@@ -209,3 +209,7 @@ __marimo__/
 # Haze state folder (runtime persistence, not committed)
 haze/state/
 !haze/state/.gitkeep
+
+# CLOUD generated artifacts
+cloud_data.json
+/models/
