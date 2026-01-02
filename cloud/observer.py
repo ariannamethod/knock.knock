@@ -17,6 +17,7 @@
 # Total params: ~15K
 
 from __future__ import annotations
+import asyncio
 import numpy as np
 from pathlib import Path
 from dataclasses import dataclass
@@ -147,6 +148,63 @@ class MetaObserver:
             W2=data["W2"],
             b2=data["b2"],
         )
+
+
+class AsyncMetaObserver:
+    """
+    Async wrapper for MetaObserver with field lock discipline.
+    
+    Based on HAZE's async pattern - achieves coherence through
+    explicit operation ordering and atomicity.
+    """
+    
+    def __init__(self, observer: MetaObserver):
+        self._sync = observer
+        self._lock = asyncio.Lock()
+    
+    @classmethod
+    def random_init(cls, seed: Optional[int] = None) -> "AsyncMetaObserver":
+        """Initialize with random weights."""
+        observer = MetaObserver.random_init(seed=seed)
+        return cls(observer)
+    
+    @classmethod
+    def load(cls, path: Path) -> "AsyncMetaObserver":
+        """Load from file."""
+        observer = MetaObserver.load(path)
+        return cls(observer)
+    
+    async def forward(
+        self,
+        resonances: np.ndarray,
+        iterations: float,
+        user_fingerprint: np.ndarray,
+    ) -> np.ndarray:
+        """Async forward pass with field lock."""
+        async with self._lock:
+            return self._sync.forward(resonances, iterations, user_fingerprint)
+    
+    async def predict_secondary(
+        self,
+        resonances: np.ndarray,
+        iterations: float,
+        user_fingerprint: np.ndarray,
+        temperature: float = 1.0,
+    ) -> int:
+        """Async secondary emotion prediction."""
+        async with self._lock:
+            return self._sync.predict_secondary(
+                resonances, iterations, user_fingerprint, temperature
+            )
+    
+    async def save(self, path: Path) -> None:
+        """Save with lock protection."""
+        async with self._lock:
+            self._sync.save(path)
+    
+    def param_count(self) -> int:
+        """Total parameters (read-only, no lock needed)."""
+        return self._sync.param_count()
 
 
 if __name__ == "__main__":

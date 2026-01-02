@@ -165,6 +165,100 @@ class Cloud:
         return self.chambers.param_count() + self.observer.param_count()
 
 
+class AsyncCloud:
+    """
+    Fully async CLOUD with context manager support.
+    
+    Based on HAZE's AsyncHazeField pattern:
+    - Field lock discipline for coherence
+    - Context manager for clean lifecycle
+    - Graceful initialization and cleanup
+    
+    Usage:
+        async with AsyncCloud.create() as cloud:
+            response = await cloud.ping("I'm feeling anxious")
+    
+    Or standalone:
+        cloud = await AsyncCloud.create()
+        response = await cloud.ping("I'm feeling anxious")
+        await cloud.close()
+    """
+    
+    def __init__(self, cloud: Cloud):
+        self._sync = cloud
+        self._lock = asyncio.Lock()
+        self._closed = False
+    
+    @classmethod
+    async def create(
+        cls,
+        models_dir: Optional[Path] = None,
+        seed: Optional[int] = None,
+    ) -> "AsyncCloud":
+        """
+        Create AsyncCloud instance.
+        
+        Args:
+            models_dir: Path to load trained weights (optional)
+            seed: Random seed for initialization (if no models_dir)
+        
+        Returns:
+            AsyncCloud ready for use
+        """
+        if models_dir and models_dir.exists():
+            cloud = Cloud.load(models_dir)
+        else:
+            cloud = Cloud.random_init(seed=seed)
+        
+        return cls(cloud)
+    
+    async def __aenter__(self) -> "AsyncCloud":
+        """Context manager entry."""
+        return self
+    
+    async def __aexit__(self, *args) -> None:
+        """Context manager exit."""
+        await self.close()
+    
+    async def close(self) -> None:
+        """Clean shutdown."""
+        if not self._closed:
+            self._closed = True
+            # Save user cloud state if needed
+            # await self.save(Path("cloud/models"))
+    
+    async def ping(self, user_input: str) -> CloudResponse:
+        """
+        Async ping with field lock.
+        
+        Atomic operation - prevents field corruption during emotion detection.
+        """
+        if self._closed:
+            raise RuntimeError("AsyncCloud is closed")
+        
+        async with self._lock:
+            return await self._sync.ping(user_input)
+    
+    async def save(self, models_dir: Path) -> None:
+        """Save all components with lock protection."""
+        async with self._lock:
+            self._sync.save(models_dir)
+    
+    def param_count(self) -> int:
+        """Total parameters (read-only, no lock needed)."""
+        return self._sync.param_count()
+    
+    @property
+    def anchors(self):
+        """Access emotion anchors."""
+        return self._sync.anchors
+    
+    @property
+    def user_cloud(self):
+        """Access user cloud for stats."""
+        return self._sync.user_cloud
+
+
 if __name__ == "__main__":
     print("=" * 60)
     print("  CLOUD v3.0 — Main Orchestrator")

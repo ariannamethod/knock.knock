@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
-# talkto.py — Router for HAZE and CLOUD
+# talkto.py — Async Router for HAZE + CLOUD
 #
-# Unified interface:
-# - Default: HAZE only (fast, simple)
+# Unified async interface:
+# - Default: HAZE only (fast, autonomous)
 # - /cloud: Toggle CLOUD mode (pre-semantic sonar)
-# - /feedback: Show feedback stats
+# - /stats: Show bridge statistics
 #
-# CLOUD mode: emotion detection → HAZE generation → coherence feedback
+# Design principle: HAZE IS ALWAYS AUTONOMOUS
+# - CLOUD is optional enhancement
+# - Silent fallback if CLOUD fails
+# - No errors leak to user
+#
+# "Two minds that can resonate together,
+#  but never depend on each other."
 
 import sys
 import asyncio
@@ -16,186 +22,209 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).parent / "haze"))
 
+from bridge import AsyncBridge, HAS_CLOUD, HAS_HAZE
 
-class HazeCloudRouter:
+
+class AsyncHazeCloudRouter:
     """
-    Router that switches between HAZE-only and HAZE+CLOUD modes.
-
+    Async router that orchestrates HAZE and CLOUD.
+    
+    HAZE is always primary (autonomous voice generation).
+    CLOUD is optional (pre-semantic emotion detection).
+    
     Commands:
-        /cloud - toggle CLOUD mode
-        /feedback - show feedback stats
-        /help - show help
+        /cloud   - toggle CLOUD mode
+        /stats   - show bridge statistics  
+        /help    - show help
+        /quit    - exit
+    
+    Silent fallback: if CLOUD fails, HAZE continues without error messages.
     """
-
+    
     def __init__(self):
+        self.bridge: AsyncBridge = None
         self.cloud_enabled = False
-        self.cloud = None
-        self.feedback_history = []
-
+        self._initialized = False
+    
+    async def initialize(self):
+        """Initialize the bridge."""
         print("=" * 60)
-        print("  HAZE + CLOUD Router")
+        print("  ██╗  ██╗ █████╗ ███████╗███████╗")
+        print("  ██║  ██║██╔══██╗╚══███╔╝██╔════╝")
+        print("  ███████║███████║  ███╔╝ █████╗  ")
+        print("  ██╔══██║██╔══██║ ███╔╝  ██╔══╝  ")
+        print("  ██║  ██║██║  ██║███████╗███████╗")
+        print("  ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝")
         print("=" * 60)
         print()
-        print("  Purpose: Experiment with CLOUD emotion detection")
+        print("  HAZE + CLOUD Router (Async)")
+        print()
+        print(f"  HAZE available: {'✓' if HAS_HAZE else '✗'}")
+        print(f"  CLOUD available: {'✓' if HAS_CLOUD else '✗'}")
+        print()
+        
+        # Create bridge
+        corpus_path = Path("haze/text.txt")
+        if not corpus_path.exists():
+            corpus_path = Path(__file__).parent / "haze" / "text.txt"
+        
+        self.bridge = await AsyncBridge.create(
+            corpus_path=str(corpus_path),
+            enable_cloud=True,
+            silent_fallback=True,
+            cloud_timeout=0.5,
+        )
+        
+        self._initialized = True
+        
+        print(f"  Bridge initialized:")
+        print(f"    HAZE: {'✓ ready' if self.bridge.haze else '✗ not available'}")
+        print(f"    CLOUD: {'✓ ready' if self.bridge.cloud else '✗ not available (silent fallback)'}")
         print()
         print("  Commands:")
-        print("    /cloud - toggle CLOUD pre-semantic sonar")
-        print("    /feedback - show coherence stats")
-        print("    /help - show all commands")
+        print("    /cloud  - toggle CLOUD emotion detection")
+        print("    /stats  - show statistics")
+        print("    /help   - show all commands")
+        print("    /quit   - exit")
         print()
-        print("  Note: For full HAZE chat, use: python talk2haze.py")
-        print()
-        print("  Current mode: CLOUD disabled")
-        print("  Type /cloud to enable emotion detection")
+        print("  Mode: HAZE only (type /cloud to enable emotion detection)")
         print("=" * 60)
         print()
-
+    
+    async def cleanup(self):
+        """Cleanup resources."""
+        if self.bridge:
+            await self.bridge.__aexit__(None, None, None)
+    
     def toggle_cloud(self):
         """Toggle CLOUD mode."""
         self.cloud_enabled = not self.cloud_enabled
-
+        
         if self.cloud_enabled:
-            # Initialize CLOUD
-            if self.cloud is None:
-                try:
-                    from cloud import Cloud
-                    self.cloud = Cloud.load(Path("cloud/models"))
-                    print("[cloud] loaded from cloud/models")
-                except Exception as e:
-                    print(f"[cloud] failed to load: {e}")
-                    print("[cloud] initializing with random weights...")
-                    from cloud import Cloud
-                    self.cloud = Cloud.random_init()
-
-            print("✓ CLOUD enabled (pre-semantic emotion detection)")
+            if self.bridge.cloud:
+                print("✓ CLOUD enabled (pre-semantic emotion detection)")
+            else:
+                print("⚠ CLOUD requested but not available (silent fallback active)")
         else:
             print("✗ CLOUD disabled (HAZE only mode)")
-
-    def show_feedback_stats(self):
-        """Show feedback statistics."""
-        if not self.feedback_history:
-            print("[feedback] no data yet")
-            return
-
+    
+    def show_stats(self):
+        """Show bridge statistics."""
+        stats = self.bridge.stats()
+        
         print("=" * 60)
-        print("  Feedback Statistics")
+        print("  Bridge Statistics")
         print("=" * 60)
-
-        recent = self.feedback_history[-10:]
-        avg_coherence = sum(f["coherence"] for f in recent) / len(recent)
-
-        print(f"  Recent coherence: {avg_coherence:.3f}")
-        print(f"  Total interactions: {len(self.feedback_history)}")
         print()
-
-        print("  Last 5 interactions:")
-        for i, feedback in enumerate(recent[-5:], 1):
-            print(f"    {i}. Coherence: {feedback['coherence']:.3f}")
-            if feedback.get("anomaly"):
-                print(f"       Anomaly: {feedback['anomaly']}")
+        print(f"  HAZE: {'✓ active' if stats['haze_available'] else '✗ not available'}")
+        print(f"  CLOUD: {'✓ active' if stats['cloud_available'] else '✗ not available'}")
         print()
-
-    async def process_with_cloud(self, user_input: str) -> str:
-        """Process input with CLOUD + HAZE."""
-        # 1. CLOUD ping (emotion detection)
-        cloud_response = await self.cloud.ping(user_input)
-
-        # Display CLOUD output
-        print(f"[cloud] {cloud_response.primary} + {cloud_response.secondary}", end="")
-        if cloud_response.anomaly.has_anomaly:
-            print(f" | anomaly: {cloud_response.anomaly.anomaly_type}", end="")
+        
+        if stats['cloud_successes'] + stats['cloud_failures'] + stats['cloud_timeouts'] > 0:
+            print("  CLOUD stats:")
+            print(f"    Successes: {stats['cloud_successes']}")
+            print(f"    Failures: {stats['cloud_failures']}")
+            print(f"    Timeouts: {stats['cloud_timeouts']}")
+            print(f"    Success rate: {stats['cloud_success_rate']:.1%}")
+        else:
+            print("  CLOUD stats: no requests yet")
+        
         print()
-
-        # 2. HAZE generates (in future: pass cloud_hint)
-        # For now: just use standard HAZE
-        # TODO: integrate cloud_hint into haze.async_haze
-
-        # Simulate HAZE response for now
-        haze_response = f"[HAZE would respond here, influenced by {cloud_response.primary}]"
-
-        # 3. Measure coherence and update coupling
-        from cloud.feedback import measure_coherence, update_coupling
-
-        coherence_metrics = measure_coherence(haze_response)
-        coherence = coherence_metrics["coherence"]
-
-        # Update coupling matrix
-        self.cloud.chambers.coupling = update_coupling(
-            self.cloud.chambers.coupling,
-            cloud_response.chamber_activations,
-            coherence,
-            learning_rate=0.01,
+        print("=" * 60)
+    
+    def show_help(self):
+        """Show help."""
+        print()
+        print("Commands:")
+        print("  /cloud  - toggle CLOUD emotion detection")
+        print("  /stats  - show bridge statistics")
+        print("  /help   - show this help")
+        print("  /quit   - exit")
+        print()
+        print("Just type anything to talk to HAZE.")
+        if self.cloud_enabled:
+            print("CLOUD will detect emotions before HAZE responds.")
+        print()
+    
+    async def process_input(self, user_input: str) -> str:
+        """Process user input and generate response."""
+        response = await self.bridge.respond(
+            user_input,
+            use_cloud=self.cloud_enabled,
         )
-
-        # Save feedback
-        self.feedback_history.append({
-            "coherence": coherence,
-            "anomaly": cloud_response.anomaly.anomaly_type,
-            "primary": cloud_response.primary,
-        })
-
-        print(f"[feedback] coherence: {coherence:.3f}")
-
-        return haze_response
-
-    def process_without_cloud(self, user_input: str) -> str:
-        """Process input with HAZE only."""
-        print("[info] HAZE-only mode active")
-        print("[info] For full HAZE REPL experience, use: python talk2haze.py")
-        print()
-        return "[Placeholder - use talk2haze.py for full HAZE chat]"
-
+        
+        # Show CLOUD info if enabled and available
+        if self.cloud_enabled and response.cloud_hint:
+            hint = response.cloud_hint
+            print(f"  [cloud] {hint.primary} + {hint.secondary}", end="")
+            if hint.anomaly.has_anomaly:
+                print(f" | {hint.anomaly.anomaly_type}", end="")
+            print()
+        
+        return response.text
+    
     async def interactive_loop(self):
         """Main interactive loop."""
+        if not self._initialized:
+            await self.initialize()
+        
         while True:
             try:
-                user_input = input("> ").strip()
-
+                # Get input
+                try:
+                    user_input = input("[you] ").strip()
+                except EOFError:
+                    break
+                
                 if not user_input:
                     continue
-
+                
                 # Handle commands
-                if user_input == "/cloud":
-                    self.toggle_cloud()
+                if user_input.startswith("/"):
+                    cmd = user_input.lower()
+                    
+                    if cmd == "/cloud":
+                        self.toggle_cloud()
+                        continue
+                    
+                    if cmd in ["/stats", "/stat"]:
+                        self.show_stats()
+                        continue
+                    
+                    if cmd in ["/help", "/h", "/?"]:
+                        self.show_help()
+                        continue
+                    
+                    if cmd in ["/quit", "/q", "/exit"]:
+                        print("Goodbye! The haze settles...")
+                        break
+                    
+                    print(f"Unknown command: {user_input}")
+                    print("Type /help for available commands")
                     continue
-
-                if user_input == "/feedback":
-                    self.show_feedback_stats()
-                    continue
-
-                if user_input in ["/help", "/h"]:
-                    print("Commands:")
-                    print("  /cloud - toggle CLOUD mode")
-                    print("  /feedback - show stats")
-                    print("  /quit - exit")
-                    continue
-
-                if user_input in ["/quit", "/q", "/exit"]:
-                    print("Goodbye!")
-                    break
-
+                
                 # Process input
-                if self.cloud_enabled:
-                    response = await self.process_with_cloud(user_input)
-                else:
-                    response = self.process_without_cloud(user_input)
-
-                print(response)
+                response = await self.process_input(user_input)
+                print(f"[haze] {response}")
                 print()
-
+            
             except KeyboardInterrupt:
-                print("\nGoodbye!")
+                print("\n\nGoodbye! The haze settles...")
                 break
+            
             except Exception as e:
                 print(f"[error] {e}")
                 continue
+        
+        await self.cleanup()
 
 
-def main():
+async def main():
     """Entry point."""
-    router = HazeCloudRouter()
-    asyncio.run(router.interactive_loop())
+    router = AsyncHazeCloudRouter()
+    await router.initialize()
+    await router.interactive_loop()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

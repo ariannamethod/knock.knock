@@ -13,6 +13,7 @@
 # iterating until stabilization (5-10 iterations).
 
 from __future__ import annotations
+import asyncio
 import numpy as np
 from typing import Dict, Optional, Tuple
 from dataclasses import dataclass
@@ -288,6 +289,67 @@ class CrossFireSystem:
             void=void,
             coupling=coupling,
         )
+
+
+class AsyncCrossFireSystem:
+    """
+    Async wrapper for CrossFireSystem with field lock discipline.
+    
+    Based on HAZE's async pattern - achieves coherence through
+    explicit operation ordering and atomicity.
+    
+    "The asyncio.Lock doesn't add information—it adds discipline."
+    """
+    
+    def __init__(self, system: CrossFireSystem):
+        self._sync = system
+        self._lock = asyncio.Lock()
+    
+    @classmethod
+    def random_init(cls, seed: Optional[int] = None) -> "AsyncCrossFireSystem":
+        """Initialize with random weights."""
+        system = CrossFireSystem.random_init(seed=seed)
+        return cls(system)
+    
+    @classmethod
+    def load(cls, models_dir: Path) -> "AsyncCrossFireSystem":
+        """Load from models directory."""
+        system = CrossFireSystem.load(models_dir)
+        return cls(system)
+    
+    async def stabilize(
+        self,
+        resonances: np.ndarray,
+        max_iter: int = 10,
+        threshold: float = 0.01,
+        momentum: float = 0.7,
+    ) -> Tuple[Dict[str, float], int]:
+        """
+        Async cross-fire stabilization with field lock.
+        
+        Atomic operation - prevents field corruption during stabilization.
+        """
+        async with self._lock:
+            return self._sync.stabilize(resonances, max_iter, threshold, momentum)
+    
+    async def save(self, models_dir: Path) -> None:
+        """Save with lock protection."""
+        async with self._lock:
+            self._sync.save(models_dir)
+    
+    def param_count(self) -> int:
+        """Total parameters (read-only, no lock needed)."""
+        return self._sync.param_count()
+    
+    @property
+    def coupling(self) -> np.ndarray:
+        """Access coupling matrix."""
+        return self._sync.coupling
+    
+    @coupling.setter
+    def coupling(self, value: np.ndarray) -> None:
+        """Set coupling matrix (for feedback learning)."""
+        self._sync.coupling = value
 
 
 if __name__ == "__main__":

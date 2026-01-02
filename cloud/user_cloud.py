@@ -12,6 +12,7 @@
 #   where tau = 24 hours, t = time since event
 
 from __future__ import annotations
+import asyncio
 import numpy as np
 import time
 from pathlib import Path
@@ -202,6 +203,68 @@ class UserCloud:
             "fingerprint_nonzero": int((fingerprint > 0).sum()),
             "half_life_hours": self.half_life_hours,
         }
+
+
+class AsyncUserCloud:
+    """
+    Async wrapper for UserCloud with field lock discipline.
+    
+    Based on HAZE's async pattern - achieves coherence through
+    explicit operation ordering and atomicity.
+    
+    "The asyncio.Lock doesn't add information—it adds discipline."
+    """
+    
+    def __init__(self, cloud: UserCloud):
+        self._sync = cloud
+        self._lock = asyncio.Lock()
+    
+    @classmethod
+    def create(cls, half_life_hours: float = 24.0) -> "AsyncUserCloud":
+        """Create new async user cloud."""
+        cloud = UserCloud(half_life_hours=half_life_hours)
+        return cls(cloud)
+    
+    @classmethod
+    def load(cls, path: Path) -> "AsyncUserCloud":
+        """Load from file."""
+        cloud = UserCloud.load(path)
+        return cls(cloud)
+    
+    async def add_event(
+        self,
+        primary_idx: int,
+        secondary_idx: int,
+        weight: float = 1.0,
+        timestamp: Optional[float] = None,
+    ) -> None:
+        """Add event with lock protection."""
+        async with self._lock:
+            self._sync.add_event(primary_idx, secondary_idx, weight, timestamp)
+    
+    async def get_fingerprint(self, current_time: Optional[float] = None) -> np.ndarray:
+        """Get fingerprint (read-only, but lock for consistency)."""
+        async with self._lock:
+            return self._sync.get_fingerprint(current_time)
+    
+    async def get_dominant_emotions(
+        self,
+        top_k: int = 5,
+        current_time: Optional[float] = None,
+    ) -> List[tuple]:
+        """Get dominant emotions."""
+        async with self._lock:
+            return self._sync.get_dominant_emotions(top_k, current_time)
+    
+    async def save(self, path: Path) -> None:
+        """Save with lock protection."""
+        async with self._lock:
+            self._sync.save(path)
+    
+    async def stats(self) -> Dict:
+        """Get stats."""
+        async with self._lock:
+            return self._sync.stats()
 
 
 if __name__ == "__main__":
