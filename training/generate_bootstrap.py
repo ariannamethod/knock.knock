@@ -227,8 +227,8 @@ if __name__ == "__main__":
     print("=" * 60)
     print()
 
-    # Generate examples
-    n_per_chamber = 30
+    # Generate examples (1000 total = ~166 per chamber)
+    n_per_chamber = 166
     examples = generate_examples(n_per_chamber)
 
     print(f"Generated {len(examples)} examples")

@@ -22,6 +22,7 @@ from .chambers import CrossFireSystem
 from .observer import MetaObserver
 from .user_cloud import UserCloud
 from .anchors import get_all_anchors, get_anchor_index
+from .anomaly import detect_anomalies, AnomalyReport
 
 
 @dataclass
@@ -34,6 +35,7 @@ class CloudResponse:
     chamber_activations: Dict[str, float]  # cross-fire results
     iterations: int  # convergence speed signal
     user_fingerprint: np.ndarray  # (100,) temporal history
+    anomaly: AnomalyReport  # anomaly detection result
 
 
 class Cloud:
@@ -138,7 +140,10 @@ class Cloud:
         )
         secondary_word = self.anchors[secondary_idx]
 
-        # 5. Update user cloud
+        # 5. Anomaly detection
+        anomaly = detect_anomalies(chamber_activations, iterations)
+
+        # 6. Update user cloud
         self.user_cloud.add_event(primary_idx, secondary_idx)
 
         return CloudResponse(
@@ -148,6 +153,7 @@ class Cloud:
             chamber_activations=chamber_activations,
             iterations=iterations,
             user_fingerprint=user_fingerprint,
+            anomaly=anomaly,
         )
 
     def ping_sync(self, user_input: str) -> CloudResponse:

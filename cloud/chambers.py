@@ -20,6 +20,15 @@ from pathlib import Path
 
 from .anchors import CHAMBER_NAMES, COUPLING_MATRIX
 
+# Decay rates per chamber (per iteration tick)
+# Evolutionary psychology: fear lingers, rage fades, love stable, void persistent
+DECAY_RATES = {
+    "FEAR": 0.90,  # fear lingers (evolutionary advantage)
+    "LOVE": 0.93,  # attachment stable
+    "RAGE": 0.85,  # anger fades fast (high energy cost)
+    "VOID": 0.97,  # numbness persistent (protective dissociation)
+}
+
 
 def swish(x: np.ndarray) -> np.ndarray:
     """Swish activation: x * sigmoid(x)"""
@@ -208,8 +217,19 @@ class CrossFireSystem:
             for chamber in chambers
         ], dtype=np.float32)
 
+        # Decay rates array
+        decay_array = np.array([
+            DECAY_RATES["FEAR"],
+            DECAY_RATES["LOVE"],
+            DECAY_RATES["RAGE"],
+            DECAY_RATES["VOID"],
+        ], dtype=np.float32)
+
         # Stabilization loop
         for iteration in range(max_iter):
+            # Apply decay (emotions fade over time)
+            activations = activations * decay_array
+
             # Compute influence from other chambers
             influence = self.coupling @ activations
 
