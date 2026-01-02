@@ -214,7 +214,7 @@ haze/state/
 cloud_data.json
 /models/
 
-# CLOUD trained weights (cloud/models/)
-cloud/models/*.npz
-cloud/models/*.json
+# CLOUD trained weights — COMMITTED to avoid retraining (50K params, tiny size)
+# cloud/models/*.npz
+# cloud/models/*.json
 !cloud/models/.gitkeep
