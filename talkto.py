@@ -36,12 +36,17 @@ class HazeCloudRouter:
         print("  HAZE + CLOUD Router")
         print("=" * 60)
         print()
+        print("  Purpose: Experiment with CLOUD emotion detection")
+        print()
         print("  Commands:")
         print("    /cloud - toggle CLOUD pre-semantic sonar")
         print("    /feedback - show coherence stats")
         print("    /help - show all commands")
         print()
-        print("  Mode: HAZE only (type /cloud to enable emotion detection)")
+        print("  Note: For full HAZE chat, use: python talk2haze.py")
+        print()
+        print("  Current mode: CLOUD disabled")
+        print("  Type /cloud to enable emotion detection")
         print("=" * 60)
         print()
 
@@ -135,9 +140,10 @@ class HazeCloudRouter:
 
     def process_without_cloud(self, user_input: str) -> str:
         """Process input with HAZE only."""
-        # Just call HAZE directly
-        # For now, placeholder
-        return "[HAZE only mode - use haze/run.py for actual generation]"
+        print("[info] HAZE-only mode active")
+        print("[info] For full HAZE REPL experience, use: python talk2haze.py")
+        print()
+        return "[Placeholder - use talk2haze.py for full HAZE chat]"
 
     async def interactive_loop(self):
         """Main interactive loop."""
