@@ -7,11 +7,11 @@
    ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝
 ```
 
-[![TALK TO HAZE](https://img.shields.io/badge/🤗%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/ataeff/haze)  
-
 # haze — hybrid attention entropy system | by Arianna Method
 
 > *emergence is not creation but recognition*
+
+talk to haze here: [![Hugging Face Spaces](https://img.shields.io/badge/🤗%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/ataeff/haze)  
 
 ---
 
