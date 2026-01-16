@@ -445,7 +445,7 @@ def create_interface():
         background_fill_secondary="#1a1a1f",
         background_fill_secondary_dark="#1a1a1f",
         
-        # Text colors
+        # Text colors - important for visibility!
         body_text_color="#e8e8e8",
         body_text_color_dark="#e8e8e8",
         body_text_color_subdued="#d0d0d0",
@@ -480,27 +480,68 @@ def create_interface():
         shadow_drop_lg="none",
     )
     
-    # Additional CSS for fine-tuning
+    # Additional CSS for chatbot message visibility
     custom_css = """
-        /* Additional styling for chatbot messages */
+        /* Force dark background and visible text for all elements */
+        * {
+            color: #e8e8e8 !important;
+        }
+        
+        /* Chatbot container - dark background */
+        .chatbot {
+            background: #0a0a0c !important;
+        }
+        
+        /* Message bubbles with strong contrast */
         .message-wrap {
             background: transparent !important;
         }
-        .user {
+        
+        /* User messages - dark gray background with white text */
+        .message.user, .user-message, [data-testid="user"] {
             background-color: #1a1a1f !important;
+            color: #ffffff !important;
         }
-        .bot {
+        
+        .message.user *, .user-message *, [data-testid="user"] * {
+            color: #ffffff !important;
+        }
+        
+        /* Bot/Haze messages - slightly lighter background with orange text */
+        .message.bot, .bot-message, [data-testid="bot"] {
             background-color: #2a2a2f !important;
             color: #ffb347 !important;
         }
-        /* Remove any remaining borders */
-        .contain, .block {
+        
+        .message.bot *, .bot-message *, [data-testid="bot"] * {
+            color: #ffb347 !important;
+        }
+        
+        /* Ensure markdown in messages is visible */
+        .message p, .message span, .message div {
+            color: inherit !important;
+        }
+        
+        /* Remove borders */
+        .contain, .block, .chatbot {
             border: none !important;
             box-shadow: none !important;
         }
+        
+        /* Input field visibility */
+        input, textarea {
+            background-color: #1a1a1f !important;
+            color: #e8e8e8 !important;
+            border: 1px solid #333 !important;
+        }
+        
+        /* Markdown text visibility */
+        .markdown-body, .prose {
+            color: #d0d0d0 !important;
+        }
     """
     
-    with gr.Blocks() as demo:
+    with gr.Blocks(theme=haze_theme, css=custom_css) as demo:
         gr.Markdown(LOGO_TEXT)
         
         with gr.Row():
