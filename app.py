@@ -336,12 +336,12 @@ def respond(
 
 
 def create_interface():
-    """Create Gradio interface."""
+    """Create and return Gradio interface with custom CSS and title."""
     try:
         import gradio as gr
     except ImportError:
         print("[error] gradio not installed. Run: pip install gradio")
-        return None
+        return None, None, None
 
     from gradio import ChatMessage
     # Custom CSS for dark gothic theme
@@ -442,7 +442,7 @@ def create_interface():
 *Co-authored by Claude (GitHub Copilot Coding Agent), January 2026*
         """)
     
-    return demo
+    return demo, custom_css, "HAZE + CLOUD"
 
 
 # ============================================================================
@@ -459,11 +459,13 @@ def main():
     print("=" * 60)
     print()
     
-    demo = create_interface()
+    result = create_interface()
     
-    if demo is None:
+    if result is None or result[0] is None:
         print("[error] Could not create interface")
         return
+    
+    demo, custom_css, title = result
     
     print("Starting Gradio server...")
     print()
@@ -475,7 +477,7 @@ def main():
         share=False,
         show_error=True,
         css=custom_css,
-        title="HAZE + CLOUD",
+        title=title,
     )
 
 
