@@ -475,7 +475,7 @@ def create_interface():
 *Co-authored by Claude (GitHub Copilot Coding Agent), January 2026*
         """)
     
-    return demo, custom_css, "HAZE + CLOUD"
+    return demo, custom_css
 
 
 # ============================================================================
@@ -498,7 +498,7 @@ def main():
         print("[error] Could not create interface")
         return
     
-    demo, custom_css, title = result
+    demo, custom_css = result
     
     print("Starting Gradio server...")
     print()
