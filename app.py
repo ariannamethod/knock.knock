@@ -51,76 +51,6 @@ except ImportError as e:
 # CONSTANTS
 # ============================================================================
 
-CUSTOM_CSS = """
-.gradio-container {
-    background-color: #0a0a0c !important;
-}
-
-.chatbot .message.user {
-    background-color: #1a1a1f !important;
-    color: #ffffff !important;
-}
-
-.chatbot .message.assistant {
-    background-color: #2a2a2f !important;
-    color: #ffb347 !important;
-}
-
-.chatbot .message {
-    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace !important;
-}
-
-/* Improved visibility for sidebar text */
-.markdown h3, .markdown h2 {
-    color: #ffb347 !important;
-    font-weight: bold !important;
-}
-
-.markdown p {
-    color: #e0e0e0 !important;
-    font-size: 14px !important;
-}
-
-.markdown ul, .markdown li {
-    color: #d4d4d4 !important;
-    font-size: 13px !important;
-}
-
-/* Ensure code blocks are visible */
-code {
-    color: #ff6b6b !important;
-    background-color: #1a1a2e !important;
-}
-
-/* Remove white borders and boxes */
-.block {
-    border: none !important;
-    box-shadow: none !important;
-    background: transparent !important;
-}
-
-.contain {
-    border: none !important;
-    box-shadow: none !important;
-}
-
-/* Fix chatbot container */
-.chatbot {
-    border: none !important;
-    background: #0a0a0c !important;
-}
-
-/* Make all text more visible */
-.prose, .prose p, .prose li {
-    color: #e8e8e8 !important;
-}
-
-/* Sidebar markdown text */
-.markdown {
-    color: #d0d0d0 !important;
-}
-"""
-
 LOGO_TEXT = """
 ```
 ██╗  ██╗ █████╗ ███████╗███████╗
@@ -491,7 +421,7 @@ def respond(
 
 
 def create_interface():
-    """Create and return Gradio interface with custom CSS and title."""
+    """Create and return Gradio interface with custom theme."""
     try:
         import gradio as gr
     except ImportError:
@@ -499,6 +429,76 @@ def create_interface():
         return None, None
     
     from gradio import ChatMessage
+    
+    # Create custom dark theme for HAZE
+    haze_theme = gr.themes.Base(
+        primary_hue="orange",
+        secondary_hue="slate",
+        neutral_hue="slate",
+        font=gr.themes.GoogleFont("IBM Plex Mono"),
+    ).set(
+        # Global colors
+        body_background_fill="#0a0a0c",
+        body_background_fill_dark="#0a0a0c",
+        background_fill_primary="#0a0a0c",
+        background_fill_primary_dark="#0a0a0c",
+        background_fill_secondary="#1a1a1f",
+        background_fill_secondary_dark="#1a1a1f",
+        
+        # Text colors
+        body_text_color="#e8e8e8",
+        body_text_color_dark="#e8e8e8",
+        body_text_color_subdued="#d0d0d0",
+        body_text_color_subdued_dark="#d0d0d0",
+        
+        # Borders - remove white borders
+        border_color_primary="transparent",
+        border_color_primary_dark="transparent",
+        
+        # Input/textbox styling
+        input_background_fill="#1a1a1f",
+        input_background_fill_dark="#1a1a1f",
+        input_border_color="transparent",
+        input_border_color_dark="transparent",
+        input_border_width="0px",
+        
+        # Button styling
+        button_primary_background_fill="#ffb347",
+        button_primary_background_fill_dark="#ffb347",
+        button_primary_text_color="#0a0a0c",
+        button_primary_text_color_dark="#0a0a0c",
+        
+        # Block styling
+        block_background_fill="transparent",
+        block_background_fill_dark="transparent",
+        block_border_width="0px",
+        block_border_color="transparent",
+        block_border_color_dark="transparent",
+        
+        # Shadow removal
+        shadow_drop="none",
+        shadow_drop_lg="none",
+    )
+    
+    # Additional CSS for fine-tuning
+    custom_css = """
+        /* Additional styling for chatbot messages */
+        .message-wrap {
+            background: transparent !important;
+        }
+        .user {
+            background-color: #1a1a1f !important;
+        }
+        .bot {
+            background-color: #2a2a2f !important;
+            color: #ffb347 !important;
+        }
+        /* Remove any remaining borders */
+        .contain, .block {
+            border: none !important;
+            box-shadow: none !important;
+        }
+    """
     
     with gr.Blocks() as demo:
         gr.Markdown(LOGO_TEXT)
@@ -549,7 +549,7 @@ def create_interface():
         # Footer
         gr.Markdown(FOOTER_TEXT)
     
-    return demo, CUSTOM_CSS
+    return demo, haze_theme, custom_css
 
 
 # ============================================================================
@@ -572,18 +572,18 @@ def main():
         print("[error] Could not create interface")
         return
     
-    demo, custom_css = result
+    demo, theme, css = result
     
     print("Starting Gradio server...")
     print()
     
     # Launch with HuggingFace Spaces compatible settings
+    # In Gradio 6.0+, theme and css are passed to launch()
     demo.launch(
         server_name="0.0.0.0",
         server_port=7860,
         share=False,
         show_error=True,
-        css=custom_css,
     )
 
 
