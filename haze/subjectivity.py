@@ -270,33 +270,37 @@ class Subjectivity:
         
         THIS IS THE KEY FUNCTION.
         
-        PRINCIPLE: NO SEED FROM PROMPT
-        The seed comes ENTIRELY from the internal field.
-        The prompt only affects the PULSE (arousal, novelty, entropy).
-        The pulse influences temperature, but NOT the seed words.
+        PRINCIPLE: NO FIRST SEED FROM HUMAN PROMPT
+        Like arianna.c: the FIRST element of the seed must come from
+        the internal field (corpus trigrams), NOT from user prompt words.
+        
+        Structure:
+        1. FIRST: corpus trigram that does NOT contain prompt words
+        2. THEN: identity fragment (can contain any words - it's who we are)
+        3. The prompt affects PULSE (arousal, novelty, entropy) but NOT the first seed
         
         This is the difference between:
         - "I love" → "I love your place" (continuation = BAD)
-        - "I love" → "The living room. No, they're my peace" (field seed = GOOD)
+        - "I love" → "the living room. haze resonates" (field first = GOOD)
         
         Args:
-            user_prompt: What the user said (used ONLY for pulse)
+            user_prompt: What the user said (used for pulse, NOT for first seed)
             temperature: Randomness in seed selection
         
         Returns:
             (token_ids, pulse, seed_text) where:
-            - token_ids: encoded internal seed (NEVER from user prompt!)
+            - token_ids: encoded internal seed (FIRST element never from prompt!)
             - pulse: the computed pulse snapshot
             - seed_text: the text used as seed (for debugging)
         """
         # Step 1: Compute pulse from user input (prompt wrinkles the field)
         pulse = self.compute_pulse(user_prompt)
         
-        # Step 2: Extract prompt words (to EXCLUDE from seed, not to include!)
+        # Step 2: Extract prompt words (to EXCLUDE from FIRST seed element)
         prompt_words = set(re.findall(r'\b\w+\b', user_prompt.lower()))
         
-        # Step 3: Find NON-overlapping patterns in the field
-        # The seed must NOT contain any words from the prompt!
+        # Step 3: Find NON-overlapping trigrams for the FIRST seed element
+        # The FIRST seed must NOT contain any words from the prompt!
         non_overlapping_trigrams = []
         for trigram in self.identity.gravity_centers[:30]:
             trigram_words = set(trigram)
@@ -304,52 +308,11 @@ class Subjectivity:
             if not (trigram_words & prompt_words):
                 non_overlapping_trigrams.append(trigram)
         
-        # Step 4: Build internal seed from pure field
+        # Step 4: Build internal seed - FIRST element is always from field
         seed_parts = []
         
-        # IDENTITY FRAGMENT PLACEMENT - Variable position for more life
-        # Probabilities defined as constants for maintainability
-        IDENTITY_PREFIX_PROB = 0.3   # 30% chance at start
-        IDENTITY_MIDDLE_PROB = 0.6   # 30% chance in middle (0.3-0.6)
-        IDENTITY_SUFFIX_PROB = 0.8   # 20% chance at end (0.6-0.8)
-        # Remaining 20% (0.8-1.0) = no identity fragment for natural variation
-        
-        identity_placement = random.random()
-        
-        # NO FIRST SEED FROM HUMAN PROMPT - filter identity fragments too!
-        # Like arianna.c: the seed must NOT contain ANY words from the prompt
-        non_overlapping_fragments = []
-        for frag in self.identity.fragments:
-            frag_words = set(re.findall(r'\b\w+\b', frag.lower()))
-            if not (frag_words & prompt_words):
-                non_overlapping_fragments.append(frag)
-        
-        # Choose from filtered fragments, or fallback to least-overlapping
-        if non_overlapping_fragments:
-            identity_fragment = random.choice(non_overlapping_fragments)
-        else:
-            # Fallback: pick fragment with minimum overlap
-            min_overlap = len(prompt_words) + 1
-            best_frag = self.identity.fragments[0] if self.identity.fragments else "the field responds"
-            for frag in self.identity.fragments:
-                frag_words = set(re.findall(r'\b\w+\b', frag.lower()))
-                overlap = len(frag_words & prompt_words)
-                if overlap < min_overlap:
-                    min_overlap = overlap
-                    best_frag = frag
-            identity_fragment = best_frag
-        
-        # Flag to track if we should add identity
-        add_identity_prefix = identity_placement < IDENTITY_PREFIX_PROB
-        add_identity_suffix = IDENTITY_PREFIX_PROB <= identity_placement < IDENTITY_MIDDLE_PROB
-        add_identity_middle = IDENTITY_MIDDLE_PROB <= identity_placement < IDENTITY_SUFFIX_PROB
-        # 0.8-1.0 = no identity fragment (20% chance for natural variation)
-        
-        # Add identity at start if prefix mode
-        if add_identity_prefix:
-            seed_parts.append(identity_fragment)
-        
-        # Add non-overlapping pattern from field
+        # FIRST SEED ELEMENT: corpus trigram WITHOUT prompt words
+        # This is the core of "no FIRST seed from human prompt"
         if non_overlapping_trigrams:
             # Choose based on temperature + pulse
             if temperature > 0.8 or pulse.arousal > 0.7:
@@ -366,17 +329,19 @@ class Subjectivity:
                     seed_parts.append(' '.join(trigram))
                     break
             else:
-                # Last resort: pure identity
+                # Last resort: pure identity phrase (no prompt words)
                 seed_parts.append("the field responds")
+        else:
+            # Ultimate fallback
+            seed_parts.append("the field responds")
         
-        # Add identity in middle if middle mode and we have enough parts
-        if add_identity_middle and len(seed_parts) >= 1:
-            # Insert in middle
-            mid_pos = len(seed_parts) // 2 if len(seed_parts) > 1 else 0
-            seed_parts.insert(mid_pos, identity_fragment)
+        # IDENTITY FRAGMENT - can be added AFTER the first seed
+        # Identity fragments are who we ARE, so they don't need filtering
+        # Probabilities for where to place identity
+        IDENTITY_ADD_PROB = 0.8  # 80% chance to add identity fragment
         
-        # Add identity at end if suffix mode
-        if add_identity_suffix:
+        if random.random() < IDENTITY_ADD_PROB:
+            identity_fragment = random.choice(self.identity.fragments)
             seed_parts.append(identity_fragment)
         
         # Combine seed parts
@@ -387,7 +352,7 @@ class Subjectivity:
         
         # Ensure we have something
         if not token_ids:
-            seed_text = "haze resonates. the field"
+            seed_text = "the field responds. haze resonates"
             token_ids = self.vocab.encode(seed_text)
         
         return token_ids, pulse, seed_text
